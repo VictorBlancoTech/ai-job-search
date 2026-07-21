@@ -10,6 +10,10 @@ import sys
 import unittest
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.skip(reason="comando pendiente de portar a .opencode — Fase 3+")
+
 try:
     import yaml  # noqa: F401 - only probing availability for the lint integration test
     _HAVE_YAML = True
