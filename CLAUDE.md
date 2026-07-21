@@ -81,7 +81,8 @@ This repo is a job application workspace. Claude acts as a career advisor and ap
 ## Repo Structure
 - `cv/` - LaTeX CV variants (moderncv template, banking style)
 - `cover_letters/` - LaTeX cover letters (custom cover.cls template)
-- `.claude/skills/` - AI skill definitions for the application workflow
+- `perfil/` - Candidate profile source of truth (gitignored)
+- `.opencode/commands/` - OpenCode workflow commands
 - `.agents/skills/` - Job search CLI tools
 
 ## Workflow for New Job Applications
