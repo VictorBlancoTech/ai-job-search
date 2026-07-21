@@ -22,8 +22,12 @@ errors: list[str] = []
 # Personal-data ignore rules that must never disappear from .gitignore.
 REQUIRED_IGNORE_RULES = [
     ".env",
+    # Depth-independent: the job-scraper skill resolves `job_scraper/` relative
+    # to its own directory, so a repo-rooted rule would silently fail to match.
     "**/job_scraper/seen_jobs.json",
     "cv/victor_*.tex",
+    # Required re-include so the template dir stays tracked (parent pattern
+    # ignores cv/victor_*.tex only; this documents intent).
     "!cv/plantilla/",
     "perfil/01-perfil-candidato.md",
     "documents/cv/**",
@@ -32,6 +36,7 @@ REQUIRED_IGNORE_RULES = [
     "documents/references/**",
     "documents/applications/**",
     "documents/interview/**",
+    "documents/postings/**",
     "tracker/job_search_tracker.csv",
     "tracker/aplicaciones/**",
 ]
