@@ -42,6 +42,8 @@ tracker/job_search_tracker.csv
 tracker/aplicaciones/**
 tracker/borradores/**
 !tracker/.gitkeep
+!tracker/borradores/.gitkeep
+!tracker/aplicaciones/.gitkeep
 *_BehavioralReport.pdf
 linkedin_Profile.pdf
 

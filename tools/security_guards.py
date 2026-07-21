@@ -52,6 +52,8 @@ ALLOWED_IGNORE_NEGATIONS = {
     "!cv/plantilla/",
     "!documents/**/.gitkeep",
     "!tracker/.gitkeep",
+    "!tracker/borradores/.gitkeep",
+    "!tracker/aplicaciones/.gitkeep",
 }
 
 FORBIDDEN_SCRIPTS = {"preinstall", "install", "postinstall", "prepare", "prepack"}
