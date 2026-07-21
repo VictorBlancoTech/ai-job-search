@@ -44,6 +44,7 @@ REQUIRED_IGNORE_RULES = [
     "documents/postings/**",
     "tracker/job_search_tracker.csv",
     "tracker/aplicaciones/**",
+    "tracker/borradores/**",
 ]
 
 # Negation (re-include) rules legitimately shipped.
