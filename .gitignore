@@ -24,6 +24,10 @@ venv/
 # Personal data (never commit these)
 **/job_scraper/seen_jobs.json
 cv/victor_*.tex
+cv/victor-cv-master-*.tex
+cv/cv-master/**
+cv/cv-master-en/**
+cv/cv-es/**
 !cv/plantilla/
 perfil/01-perfil-candidato.md
 documents/cv/**

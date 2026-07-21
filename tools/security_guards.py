@@ -26,6 +26,11 @@ REQUIRED_IGNORE_RULES = [
     # to its own directory, so a repo-rooted rule would silently fail to match.
     "**/job_scraper/seen_jobs.json",
     "cv/victor_*.tex",
+    # Real CV masters and their section subfolders (real personal data).
+    "cv/victor-cv-master-*.tex",
+    "cv/cv-master/**",
+    "cv/cv-master-en/**",
+    "cv/cv-es/**",
     # Required re-include so the template dir stays tracked (parent pattern
     # ignores cv/victor_*.tex only; this documents intent).
     "!cv/plantilla/",

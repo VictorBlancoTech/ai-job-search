@@ -1,0 +1,39 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[10pt, a4paper]{awesome-cv}
+
+\geometry{left=1.2cm, top=.5cm, right=1.2cm, bottom=1.0cm, footskip=.45cm}
+\colorlet{awesome}{awesome-skyblue}
+\setbool{acvSectionColorHighlight}{true}
+\renewcommand{\acvHeaderSocialSep}{\quad\textbar\quad}
+\renewcommand{\acvHeaderAfterSocialSkip}{2.8mm}
+\renewcommand{\acvSectionTopSkip}{2.0mm}
+\renewcommand{\acvSectionContentTopSkip}{1.2mm}
+
+\name{[NOMBRE]}{[APELLIDO]}
+\position{[TITULAR\_PROFESIONAL]}
+\address{[CIUDAD], [PAIS]}
+\mobile{[TELEFONO]}
+\email{[EMAIL]}
+\homepage{[WEB]}
+\linkedin{[LINKEDIN]}
+
+\begin{document}
+
+\makecvheader[C]
+\makecvfooter
+  {[FECHA\_ACTUALIZACION]}
+  {[NOMBRE] [APELLIDO]~~~·~~~CV}
+  {\thepage}
+
+\input{sections/profile.tex}
+\input{sections/results.tex}
+\input{sections/experience.tex}
+\input{sections/skills.tex}
+\input{sections/education.tex}
+\input{sections/languages.tex}
+\input{sections/interests.tex}
+\input{sections/gdpr.tex}
+
+\end{document}
