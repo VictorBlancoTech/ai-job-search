@@ -71,6 +71,16 @@ def test_command_with_bad_title_fails(fixture_repo):
     assert "must start with a '# /<name>' title" in result.stdout
 
 
+def test_empty_command_file_fails_without_traceback(fixture_repo):
+    (fixture_repo / ".opencode" / "commands" / "apply.md").write_text(
+        "", encoding="utf-8"
+    )
+    result = run_linter(fixture_repo)
+    assert result.returncode == 1
+    assert "must start with a '# /<name>' title" in result.stdout
+    assert "Traceback" not in result.stderr
+
+
 def test_skill_without_frontmatter_fails(fixture_repo):
     (fixture_repo / ".agents" / "skills" / "example" / "SKILL.md").write_text(
         "# Example skill\n\nNo frontmatter here.\n", encoding="utf-8"

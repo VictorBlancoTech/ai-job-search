@@ -68,9 +68,10 @@ def check_skill(path: Path) -> None:
                     errors.append(f"{rel(path)}: allowed-tools references a missing file: {target}")
 
 
-def check_commands() -> None:
-    for cmd in sorted(ROOT.glob(".opencode/commands/*.md")):
-        first = cmd.read_text(encoding="utf-8").splitlines()[0]
+def check_commands(commands: list[Path]) -> None:
+    for cmd in commands:
+        lines = cmd.read_text(encoding="utf-8").splitlines()
+        first = lines[0] if lines else ""
         if not re.match(r"^# /[a-z0-9-]+", first):
             errors.append(f"{rel(cmd)}: must start with a '# /<name>' title")
 
@@ -85,7 +86,7 @@ def main() -> int:
 
     for skill in skills:
         check_skill(skill)
-    check_commands()
+    check_commands(commands)
 
     if errors:
         print(f"lint_skills: {len(errors)} failure(s)")
