@@ -1,0 +1,96 @@
+{
+  "results": [
+    {
+      "company": {
+        "__CLASS__": "Adzuna::API::Response::Company",
+        "display_name": "Rewind"
+      },
+      "salary_is_predicted": "0",
+      "location": {
+        "area": [
+          "Italia",
+          "Emilia-Romagna",
+          "Provincia di Bologna",
+          "Bologna"
+        ],
+        "__CLASS__": "Adzuna::API::Response::Location",
+        "display_name": "Bologna, Provincia di Bologna"
+      },
+      "redirect_url": "https://www.adzuna.it/details/5716163568?utm_medium=api&utm_source=7d3cc114",
+      "description": "Cerchiamo Responsabile Commerciale IT (Cybersecurity & Connettività) Sei un/a commerciale che ama l’innovazione e sa parlare di sicurezza in modo chiaro e concreto? Se ti motivano le sfide, i risultati e la consulenza B2B ad alto valore, in Altuofianco puoi costruire un percorso solido in un mercato in forte crescita. Chi siamo: Altuofianco è il partner di riferimento per imprese e professionisti…",
+      "__CLASS__": "Adzuna::API::Response::Job",
+      "created": "2026-05-01T22:30:58Z",
+      "category": {
+        "__CLASS__": "Adzuna::API::Response::Category",
+        "label": "Informatica/IT",
+        "tag": "it-jobs"
+      },
+      "latitude": 44.498542,
+      "title": "Consulente commerciale IT",
+      "longitude": 11.341108,
+      "id": "5716163568"
+    },
+    {
+      "redirect_url": "https://www.adzuna.it/details/5805460781?utm_medium=api&utm_source=7d3cc114",
+      "title": "ERP DEVELOPER",
+      "id": "5805460781",
+      "salary_is_predicted": "0",
+      "__CLASS__": "Adzuna::API::Response::Job",
+      "latitude": 45.598441,
+      "description": "Orienta spa, società benefit, filiale di Ivrea, ricerca per azienda cliente un/a: ERP DEVELOPER Attività principali: - Garantisce il funzionamento del sistema ERP sia in termini di gestione delle performance che di usabilità; - Assicura la corretta applicazione del principio di separazione delle funzioni secondo la normativa aziendale vigente; - Assicura il proprio aggiornamento permanente sulle…",
+      "salary_min": 24000,
+      "category": {
+        "tag": "it-jobs",
+        "__CLASS__": "Adzuna::API::Response::Category",
+        "label": "Informatica/IT"
+      },
+      "longitude": 7.799431,
+      "created": "2026-07-18T01:17:44Z",
+      "salary_max": 33600,
+      "location": {
+        "__CLASS__": "Adzuna::API::Response::Location",
+        "area": [
+          "Italia",
+          "Valle d'Aosta",
+          "Provincia di Aosta",
+          "Pont-Saint-Martin"
+        ],
+        "display_name": "Pont-Saint-Martin, Provincia di Aosta"
+      },
+      "company": {
+        "display_name": "Orienta",
+        "__CLASS__": "Adzuna::API::Response::Company"
+      }
+    },
+    {
+      "company": {
+        "__CLASS__": "Adzuna::API::Response::Company",
+        "display_name": "MAW"
+      },
+      "location": {
+        "area": [
+          "Italia",
+          "Lombardia",
+          "Provincia di Milano",
+          "Milano"
+        ],
+        "__CLASS__": "Adzuna::API::Response::Location",
+        "display_name": "Milano, Provincia di Milano"
+      },
+      "created": "2026-07-05T22:04:14Z",
+      "category": {
+        "label": "Risorse Umane/HR",
+        "__CLASS__": "Adzuna::API::Response::Category",
+        "tag": "hr-jobs"
+      },
+      "__CLASS__": "Adzuna::API::Response::Job",
+      "salary_is_predicted": "0",
+      "description": "Business Sales Developer Per il potenziamento della nostra organizzazione commerciale, ricerchiamo un/una Business Sales Developer che, in stretta collaborazione con l'Area Manager, avrà il compito di supportare la crescita del business attraverso il monitoraggio delle performance commerciali, la formazione della rete vendita e l'implementazione di azioni di sviluppo sul territorio.…",
+      "id": "5789298149",
+      "title": "Sales Developer",
+      "redirect_url": "https://www.adzuna.it/land/ad/5789298149?se=FOh8i6-F8RGXBa5XX-Y_Vg&utm_medium=api&utm_source=7d3cc114&v=282F7659F82A04BF5847EE39A4EDB4F21614B222"
+    }
+  ],
+  "count": 3,
+  "__CLASS__": "Adzuna::API::Response::JobSearchResults"
+}
