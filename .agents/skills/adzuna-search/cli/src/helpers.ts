@@ -188,7 +188,7 @@ export function toResult(j: AdzunaJob): JobResult {
 
 // Named entities beyond the XML basics: Latin-1 letters common in Italian and
 // Spanish postings, plus a few typographic marks.
-const NAMED_ENTITIES: Record<string, string> = {
+const NAMED_ENTITIES: Record<string, string> = Object.assign(Object.create(null) as Record<string, string>, {
   amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
   euro: "€", ndash: "–", mdash: "—",
   copy: "©", bull: "•", trade: "™", middot: "·",
@@ -201,7 +201,7 @@ const NAMED_ENTITIES: Record<string, string> = {
   Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú",
   ntilde: "ñ", Ntilde: "Ñ", ccedil: "ç", uuml: "ü", Uuml: "Ü",
   hellip: "…", laquo: "«", raquo: "»", deg: "°",
-}
+})
 
 function numericEntity(cp: number): string {
   return cp >= 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : ""

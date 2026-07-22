@@ -130,6 +130,10 @@ describe("stripHtml", () => {
     expect(stripHtml("&copy; &bull; &trade;")).toBe("© • ™");
   });
 
+  test("leaves unknown named entities unchanged", () => {
+    expect(stripHtml("&constructor; &toString;")).toBe("&constructor; &toString;");
+  });
+
   test("decodes numeric entities", () => {
     expect(stripHtml("l&#39;azienda")).toBe("l'azienda");
   });
