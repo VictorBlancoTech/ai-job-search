@@ -1,0 +1,45 @@
+{
+  "currentPage": 1,
+  "pageSize": 3,
+  "totalResults": 2,
+  "currentResults": 3,
+  "totalPages": 1,
+  "queryParameters": {
+    "query": "responsable IT",
+    "province": ["madrid"]
+  },
+  "offers": [
+    {
+      "id": "abc123remote",
+      "title": "Responsable IT",
+      "province": { "id": 28, "value": "Madrid" },
+      "city": "Madrid",
+      "link": "https://www.infojobs.net/madrid/responsable-it/of-abc123remote",
+      "author": { "id": "company-1", "name": "Ejemplo Tecnología" },
+      "updated": "2026-07-22T10:30:00.000Z",
+      "published": "2026-07-20T10:30:00.000Z",
+      "salaryMin": { "id": 30, "value": "30.000 €" },
+      "salaryMax": { "id": 40, "value": "40.000 €" },
+      "salaryPeriod": { "id": 1, "value": "Bruto/año" },
+      "teleworking": { "id": 2, "key": "teletrabajo-posible", "value": "Teletrabajo posible" },
+      "requirementMin": "<p>Experiencia &amp; liderazgo</p><br data-note=\"1 > 0\">Gestión de equipos"
+    },
+    {
+      "id": "def456onsite",
+      "title": "Técnico de soporte",
+      "province": { "id": 46, "value": "Valencia" },
+      "city": "Valencia",
+      "link": "https://www.infojobs.net/valencia/tecnico-soporte/of-def456onsite",
+      "author": { "name": "Empresa Ejemplo" },
+      "updated": "2025-02-29T09:00:00.000Z",
+      "published": "2026-07-21T09:00:00.000Z",
+      "salaryPeriod": { "id": 1, "value": "Bruto/mes" },
+      "teleworking": { "id": 1, "key": "trabajo-solo-presencial", "value": "Presencial" },
+      "requirementMin": "<div>Atención &lt;cliente&gt;</div>"
+    },
+    {
+      "id": "malformed-no-title",
+      "link": "https://www.infojobs.net/malformed"
+    }
+  ]
+}

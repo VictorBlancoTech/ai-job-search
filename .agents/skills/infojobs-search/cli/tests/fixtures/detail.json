@@ -1,0 +1,17 @@
+{
+  "id": "abc123remote",
+  "title": "Responsable IT",
+  "provinceValue": "Madrid",
+  "city": "Madrid",
+  "link": "https://www.infojobs.net/madrid/responsable-it/of-abc123remote",
+  "author": { "name": "Ejemplo Tecnología" },
+  "updateDate": "2026-07-22T10:30:00.000+0000",
+  "creationDate": "2026-07-01T08:00:00.000+0000",
+  "teleworking": { "key": "solo-teletrabajo", "value": "Solo teletrabajo" },
+  "salaryMin": { "value": "35.000 €" },
+  "salaryMax": { "value": "45.000 €" },
+  "salaryPeriod": { "value": "Bruto/año" },
+  "description": "<div>Descripción <strong>completa</strong> &amp; segura.<br>Responsabilidades</div>",
+  "minRequirements": "<p>Requisito mínimo</p>",
+  "desiredRequirements": "<p>Requisito deseable</p>"
+}
