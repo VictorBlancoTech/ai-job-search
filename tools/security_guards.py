@@ -28,6 +28,8 @@ REQUIRED_IGNORE_RULES = [
     "**/job_scraper/seen_jobs.corrupt.*.json",
     "job_scraper/runs/",
     "job_scraper/latest.json",
+    "job_scraper/rank_runs/",
+    "job_scraper/latest-rank.json",
     "cv/victor_*.tex",
     # Tailored per-application variants created by /apply (section subfolders).
     "cv/victor_*/**",
