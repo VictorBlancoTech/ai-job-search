@@ -26,6 +26,8 @@ REQUIRED_IGNORE_RULES = [
     # to its own directory, so a repo-rooted rule would silently fail to match.
     "**/job_scraper/seen_jobs.json",
     "cv/victor_*.tex",
+    # Tailored per-application variants created by /apply (section subfolders).
+    "cv/victor_*/**",
     # Real CV masters and their section subfolders (real personal data).
     "cv/victor-cv-master-*.tex",
     "cv/cv-master/**",
