@@ -242,12 +242,15 @@ function normalizedText(value: string): string {
 }
 
 /** Convert a friendly province name into the API's documented key format. */
-const PROVINCE_KEY_ALIASES: Record<string, string> = {
-  alava: "alava",
-  madrid: "madrid",
-  valencia: "valencia-valencia",
-  "valencia-valencia": "valencia-valencia",
-}
+const PROVINCE_KEY_ALIASES: Record<string, string> = Object.assign(
+  Object.create(null) as Record<string, string>,
+  {
+    alava: "alava",
+    madrid: "madrid",
+    valencia: "valencia-valencia",
+    "valencia-valencia": "valencia-valencia",
+  },
+)
 
 export function normalizeProvince(value: string): string {
   const slug = value

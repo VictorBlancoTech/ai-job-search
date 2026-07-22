@@ -114,6 +114,7 @@ describe("safe HTML, teleworking, salary, and dates", () => {
     expect(normalizeProvince("Valencia")).toBe("valencia-valencia")
     expect(normalizeProvince("Santa Cruz de Tenerife")).toBe("santa-cruz-de-tenerife")
     expect(normalizeProvince("madrid")).toBe("madrid")
+    expect(normalizeProvince("constructor")).toBe("constructor")
   })
 
   test("normalizes strict dates and rejects impossible or malformed values", () => {

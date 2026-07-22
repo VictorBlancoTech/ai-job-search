@@ -429,7 +429,7 @@ EOF
 python tools/security_guards.py   # debe seguir OK (.env está gitignored)
 ```
 
-Nota: InfoJobs requiere ir a developer.infojobs.net → "Mis aplicaciones" → crear app "ai-job-search" → copiar client_id/secret aquí. La API de búsqueda (`/api/1/offer`) usa HTTP Basic con esas credenciales, sin OAuth de usuario.
+Nota: InfoJobs requiere ir a developer.infojobs.net → "Mis aplicaciones" → crear app "ai-job-search" → copiar client_id/secret aquí. La implementación verificada usa HTTP Basic con esas credenciales, sin OAuth de usuario: búsqueda `GET /api/9/offer` y detalle `GET /api/7/offer/{id}`.
 
 - [ ] **Step 2: Reescribir `AGENTS.md`** (sustituir completo)
 
