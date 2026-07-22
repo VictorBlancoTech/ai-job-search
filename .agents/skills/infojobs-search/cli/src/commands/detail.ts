@@ -4,7 +4,7 @@ import {
   requireCredentials,
   toDetail,
   writeError,
-  INFOJOBS_API_BASE,
+  INFOJOBS_DETAIL_ENDPOINT,
   type ApiGetOptions,
   type Credentials,
   type Environment,
@@ -29,7 +29,7 @@ export interface DetailDependencies {
 }
 
 export function buildDetailUrl(id: string): string {
-  return `${INFOJOBS_API_BASE}/${encodeURIComponent(id)}`
+  return `${INFOJOBS_DETAIL_ENDPOINT}/${encodeURIComponent(id)}`
 }
 
 function apiOptions(dependencies: DetailDependencies, credentials: Credentials): ApiGetOptions {

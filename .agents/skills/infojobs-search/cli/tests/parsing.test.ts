@@ -4,6 +4,7 @@ import { join } from "node:path"
 import {
   jobsFromResponse,
   normalizeDate,
+  normalizeProvince,
   stripHtml,
   toDetail,
   toResult,
@@ -105,6 +106,13 @@ describe("safe HTML, teleworking, salary, and dates", () => {
     expect(toResult({ ...base, salaryDescription: "35.000 - 45.000 € Bruto/año" })?.salary).toBe(
       "35.000 - 45.000 € Bruto/año",
     )
+  })
+
+  test("normalizes friendly province names to documented API keys", () => {
+    expect(normalizeProvince("Madrid")).toBe("madrid")
+    expect(normalizeProvince("Álava")).toBe("alava")
+    expect(normalizeProvince("Santa Cruz de Tenerife")).toBe("santa-cruz-de-tenerife")
+    expect(normalizeProvince("madrid")).toBe("madrid")
   })
 
   test("normalizes strict dates and rejects impossible or malformed values", () => {

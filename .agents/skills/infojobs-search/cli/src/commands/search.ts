@@ -1,6 +1,7 @@
 import {
   apiGet,
-  INFOJOBS_API_BASE,
+  INFOJOBS_SEARCH_ENDPOINT,
+  normalizeProvince,
   requireCredentials,
   toResult,
   jobsFromResponse,
@@ -32,10 +33,10 @@ export interface SearchDependencies {
 }
 
 export function buildSearchUrl(opts: SearchOpts): string {
-  const url = new URL(INFOJOBS_API_BASE)
+  const url = new URL(INFOJOBS_SEARCH_ENDPOINT)
   const params = url.searchParams
   if (opts.query.trim()) params.set("q", opts.query)
-  if (opts.where?.trim()) params.set("province", opts.where)
+  if (opts.where?.trim()) params.set("province", normalizeProvince(opts.where))
   if (opts.teleworking) params.set("teleworking", "solo-teletrabajo")
   params.set("page", String(opts.page))
   params.set("maxResults", String(opts.limit))

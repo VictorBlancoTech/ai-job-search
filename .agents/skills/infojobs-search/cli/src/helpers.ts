@@ -1,4 +1,6 @@
-export const INFOJOBS_API_BASE = "https://api.infojobs.net/api/1/offer"
+export const INFOJOBS_API_BASE = "https://api.infojobs.net/api"
+export const INFOJOBS_SEARCH_ENDPOINT = `${INFOJOBS_API_BASE}/9/offer`
+export const INFOJOBS_DETAIL_ENDPOINT = `${INFOJOBS_API_BASE}/7/offer`
 export const INFOJOBS_USER_AGENT =
   "ai-job-search/infojobs-search/1.0 (+https://developer.infojobs.net/)"
 
@@ -156,6 +158,9 @@ export interface InfoJobsOffer {
   salaryMin?: unknown
   salaryMax?: unknown
   salaryPeriod?: unknown
+  minPay?: unknown
+  maxPay?: unknown
+  showPay?: unknown
   salaryDescription?: unknown
   salaryRange?: unknown
   salary?: unknown
@@ -236,6 +241,17 @@ function normalizedText(value: string): string {
     .trim()
 }
 
+/** Convert a friendly province name into the API's documented key format. */
+export function normalizeProvince(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/[’']/gu, "")
+    .replace(/[^a-z0-9]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+}
+
 function locationText(offer: InfoJobsOffer): string | null {
   const city = nestedText(offer.city ?? offer.cityValue, ["value", "name"])
   const province = nestedText(offer.province, ["value", "name"]) ?? textValue(offer.provinceValue)
@@ -276,16 +292,36 @@ export function normalizeRemote(value: unknown): boolean | null {
   return null
 }
 
-function explicitSalaryText(value: unknown): string | null {
-  const text = nestedText(value, ["value", "text", "label"], true)
+function explicitSalaryText(value: unknown, keys = ["amountValue", "value", "text", "label", "amount"]): string | null {
+  const text = nestedText(value, keys, true)
   if (text === null || !/\d/u.test(text)) return null
   return stripHtml(text)
 }
 
+interface SalaryPart {
+  amount: string | null
+  period: string | null
+}
+
+function salaryPart(value: unknown): SalaryPart {
+  return {
+    amount: explicitSalaryText(value),
+    period: nestedText(value, ["periodValue", "period", "salaryPeriod"]),
+  }
+}
+
 function formatSalary(offer: InfoJobsOffer): string | null {
-  const min = explicitSalaryText(offer.salaryMin)
-  const max = explicitSalaryText(offer.salaryMax)
-  const period = nestedText(offer.salaryPeriod, ["value", "name", "label"])
+  if (offer.showPay === false) return null
+  const minPay = salaryPart(offer.minPay)
+  const maxPay = salaryPart(offer.maxPay)
+  const legacyMin = salaryPart(offer.salaryMin)
+  const legacyMax = salaryPart(offer.salaryMax)
+  const min = minPay.amount ?? legacyMin.amount
+  const max = maxPay.amount ?? legacyMax.amount
+  const period =
+    minPay.period ??
+    maxPay.period ??
+    nestedText(offer.salaryPeriod, ["value", "name", "label"])
   let range: string | null = null
 
   if (min !== null || max !== null) range = min !== null && max !== null ? `${min}-${max}` : min ?? max

@@ -5,6 +5,8 @@ import {
   apiGet,
   buildAuthHeaders,
   INFOJOBS_API_BASE,
+  INFOJOBS_DETAIL_ENDPOINT,
+  INFOJOBS_SEARCH_ENDPOINT,
   type Credentials,
 } from "../src/helpers"
 import {
@@ -65,14 +67,18 @@ function detailOpts(overrides: Partial<DetailOpts> = {}): DetailOpts {
 
 describe("InfoJobs URLs and authentication", () => {
   test("uses documented parameter names and URL encodes values", () => {
-    const parsed = new URL(buildSearchUrl(searchOpts({ query: "responsable IT", where: "Madrid y León", teleworking: true })))
-    expect(parsed.origin + parsed.pathname).toBe(INFOJOBS_API_BASE)
+    const parsed = new URL(buildSearchUrl(searchOpts({ query: "responsable IT", where: "Madrid", teleworking: true })))
+    expect(parsed.origin + parsed.pathname).toBe(INFOJOBS_SEARCH_ENDPOINT)
     expect(parsed.searchParams.get("q")).toBe("responsable IT")
-    expect(parsed.searchParams.get("province")).toBe("Madrid y León")
+    expect(parsed.searchParams.get("province")).toBe("madrid")
     expect(parsed.searchParams.get("teleworking")).toBe("solo-teletrabajo")
     expect(parsed.searchParams.get("page")).toBe("1")
     expect(parsed.searchParams.get("maxResults")).toBe("3")
-    expect(buildDetailUrl("id/con espacios")).toBe(`${INFOJOBS_API_BASE}/id%2Fcon%20espacios`)
+    const diacriticProvince = new URL(buildSearchUrl(searchOpts({ where: "Álava" })))
+    expect(diacriticProvince.searchParams.get("province")).toBe("alava")
+    expect(buildDetailUrl("id/con espacios")).toBe(`${INFOJOBS_DETAIL_ENDPOINT}/id%2Fcon%20espacios`)
+    expect(INFOJOBS_SEARCH_ENDPOINT).toBe(`${INFOJOBS_API_BASE}/9/offer`)
+    expect(INFOJOBS_DETAIL_ENDPOINT).toBe(`${INFOJOBS_API_BASE}/7/offer`)
   })
 
   test("builds Basic auth and descriptive User-Agent without exposing raw credentials", () => {
@@ -86,7 +92,7 @@ describe("InfoJobs URLs and authentication", () => {
     let calls = 0
     const delays: number[] = []
     let requestHeaders: Headers | undefined
-    const response = await apiGet<{ offers: [] }>(INFOJOBS_API_BASE, {
+    const response = await apiGet<{ offers: [] }>(INFOJOBS_SEARCH_ENDPOINT, {
       credentials,
       retryDelayMs: 0,
       sleepFn: async (ms) => delays.push(ms),

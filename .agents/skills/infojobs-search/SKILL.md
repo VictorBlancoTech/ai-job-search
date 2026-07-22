@@ -21,13 +21,17 @@ beyond `bun`; TypeScript and `@types/bun` are development-only dependencies.
 
 ## Official API discovery
 
-The endpoint and fields below were verified against the official documentation
-on 2026-07-22:
+The endpoints and fields below were re-verified against the official
+documentation on 2026-07-22:
 
-- Search: `GET https://api.infojobs.net/api/1/offer`
-  ([offer list documentation](https://developer.infojobs.net/documentation/operation/offer-list-9.xhtml)).
-- Detail: `GET https://api.infojobs.net/api/1/offer/{offerId}`
-  ([offer detail documentation](https://developer.infojobs.net/documentation/operation/offer-detail.xhtml)).
+- Search: `GET https://api.infojobs.net/api/9/offer`
+  ([current offer list documentation](https://developer.infojobs.net/documentation/operation/offer-list-9.xhtml)).
+- Detail: `GET https://api.infojobs.net/api/7/offer/{offerId}`
+  ([current offer detail documentation](https://developer.infojobs.net/documentation/operation/offer-get-7.xhtml)).
+- The official public operations currently use different version paths for list
+  and detail. This skill intentionally uses the shared API base
+  `https://api.infojobs.net/api`, with `/9/offer` for search and `/7/offer` for
+  detail. It does not use the older `/api/1/offer` or legacy detail page.
 - Search parameters used by this skill: `q` for keyword, `province` for the
   `--where` value, `teleworking`, `page`, and `maxResults`. The official list
   documentation recommends `maxResults` of 50 or fewer; this CLI enforces that
@@ -41,10 +45,13 @@ on 2026-07-22:
   `link`, `city`, `province.value`, `author.name`, `updated`, `published`,
   `teleworking.value`, `salaryMin.value`, `salaryMax.value`,
   `salaryPeriod.value`, and `requirementMin`.
-- Detail responses are a single offer object. The documented and observed
-  detail shape includes `id`, `title`, `link`, `city`, `provinceValue`,
-  `author` or `profile`, `description`, `creationDate`/`updateDate`,
-  `minRequirements`, `desiredRequirements`, teleworking, and salary fields.
+- Detail responses are a single offer object. The current v7 shape includes
+  `id`, `title`, `link`, `city`, `province`, `author` or `profile`,
+  `description`, `creationDate`/`updateDate`, `minRequirements`,
+  `desiredRequirements`, teleworking, and `minPay`/`maxPay` objects. Pay
+  objects expose explicit `amountValue` and `periodValue` fields (and numeric
+  `amount`/identifier fields); this skill uses the display values and never
+  invents a salary from an identifier or period alone.
 
 The official pages do not publish a numeric public rate limit. The CLI sends a
 descriptive `User-Agent`, uses a 20-second timeout, and retries once after HTTP
@@ -82,9 +89,11 @@ bun run .agents/skills/infojobs-search/cli/src/cli.ts detail <offer-id> --format
 ### Search flags
 
 - `--query <text>` / `-q` is required and maps to API `q`.
-- `--where <location>` / `-l` is optional and maps to API `province`. It is
-  sent as the documented province value; the CLI does not guess country or
-  city dictionary IDs.
+- `--where <location>` / `-l` is optional and maps to API `province`. Friendly
+  province names and documented keys are accepted: the CLI lowercases,
+  removes diacritics, and converts separators/spaces to hyphens (`Madrid` ->
+  `madrid`, `Álava` -> `alava`). It is still a province filter; the CLI does
+  not guess country or city dictionary IDs.
 - `--teleworking` is a boolean server-side filter for offers marked
   `solo-teletrabajo`.
 - `--page <n>` is a 1-indexed integer, `>= 1`; default `1`.
@@ -137,9 +146,13 @@ fields become `null` or an empty description. Rows without a usable ID, title,
 or URL are skipped rather than fabricated.
 
 `remote` is `true` only for explicit remote/teleworking labels, `false` only
-for explicit onsite/presencial labels, and `null` for unknown labels. `salary`
-is populated only from explicit numeric min/max/range data and its documented
-period; a period by itself never becomes a salary.
+for explicit onsite/presencial labels, and `null` for unknown labels. The
+`--teleworking` flag is a server-side v9 request using the documented
+`teleworking=solo-teletrabajo` value; it is not a local guess or an unverified
+parameter. `salary` is populated only from explicit numeric min/max/range
+data: v9 search uses `salaryMin`/`salaryMax`/`salaryPeriod`, while v7 detail
+uses `minPay.amountValue`/`maxPay.amountValue` and `periodValue`. A period or
+identifier by itself never becomes a salary.
 
 Table and plain output are human-readable summaries. JSON is the only complete
 machine-oriented output. All errors are JSON on stderr:
