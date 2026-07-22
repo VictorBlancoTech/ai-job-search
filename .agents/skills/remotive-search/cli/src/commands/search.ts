@@ -35,11 +35,20 @@ export function buildUrl(opts: SearchOpts): string {
 }
 
 function normalizeText(value: string): string {
-  return value.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim()
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
-function jobSearchText(job: RemotiveJob): string {
-  return normalizeText(
+function tokenize(value: string): Set<string> {
+  return new Set(normalizeText(value).split(/[^\p{L}\p{N}]+/u).filter(Boolean))
+}
+
+function jobSearchTokens(job: RemotiveJob): Set<string> {
+  return tokenize(
     [
       job.title,
       job.company_name ?? "",
@@ -50,35 +59,18 @@ function jobSearchText(job: RemotiveJob): string {
   )
 }
 
-function isWordCharacter(character: string | undefined): boolean {
-  return character !== undefined && /[\p{L}\p{N}]/u.test(character)
-}
-
-function includesToken(text: string, token: string): boolean {
-  let start = 0
-  while (true) {
-    const index = text.indexOf(token, start)
-    if (index === -1) return false
-    const before = text[index - 1]
-    const after = text[index + token.length]
-    if (!isWordCharacter(before) && !isWordCharacter(after)) return true
-    start = index + 1
-  }
-}
-
 function matchesQuery(job: RemotiveJob, rawQuery?: string): boolean {
-  const query = normalizeText(rawQuery ?? "")
-  if (!query) return true
+  const queryTokens = tokenize(rawQuery ?? "")
+  if (queryTokens.size === 0) return true
 
-  const text = jobSearchText(job)
-  if (text.includes(query)) return true
-  return query.split(" ").every((token) => includesToken(text, token))
+  const jobTokens = jobSearchTokens(job)
+  return [...queryTokens].every((token) => jobTokens.has(token))
 }
 
 function matchesCategory(job: RemotiveJob, rawCategory?: string): boolean {
   const category = normalizeText(rawCategory ?? "")
   if (!category) return true
-  return normalizeText(job.category ?? "").includes(category)
+  return normalizeText(job.category ?? "") === category
 }
 
 function filterJobs(jobs: RemotiveJob[], opts: SearchOpts): RemotiveJob[] {

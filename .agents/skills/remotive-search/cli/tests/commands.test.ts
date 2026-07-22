@@ -17,12 +17,74 @@ const fixture = JSON.parse(
   readFileSync(join(import.meta.dir, "fixtures", "search.json"), "utf8"),
 ) as SearchResponse;
 
+const filteringFixture: SearchResponse = {
+  jobs: [
+    {
+      id: "healthcare",
+      url: "https://example.test/healthcare",
+      title: "Healthcare Analyst",
+      company_name: "Health Data",
+      category: "Medical",
+      candidate_required_location: "Worldwide",
+      description: "Healthcare analytics and reporting.",
+    },
+    {
+      id: "health-care",
+      url: "https://example.test/health-care",
+      title: "Health Care Coordinator",
+      company_name: "Care Network",
+      category: "Medical",
+      candidate_required_location: "Worldwide",
+      description: "<p>Coordinate health and care services.</p>",
+    },
+    {
+      id: "health-only",
+      url: "https://example.test/health-only",
+      title: "Health Services Analyst",
+      company_name: "Public Health",
+      category: "Medical",
+      candidate_required_location: "Worldwide",
+      description: "Health services analysis.",
+    },
+    {
+      id: "medical-exact",
+      url: "https://example.test/medical",
+      title: "Clinical Specialist",
+      company_name: "Clinical Labs",
+      category: "Medical",
+      candidate_required_location: "Worldwide",
+      description: "Clinical operations support.",
+    },
+    {
+      id: "medical-operations",
+      url: "https://example.test/medical-operations",
+      title: "Operations Manager",
+      company_name: "Hospital Group",
+      category: "Medical Operations",
+      candidate_required_location: "Worldwide",
+      description: "Manage operational programs.",
+    },
+    {
+      id: "accented",
+      url: "https://example.test/accented",
+      title: "Atencion al Cliente",
+      company_name: "Servicio Publico",
+      category: "Customer Service",
+      candidate_required_location: "Worldwide",
+      description: "Support customers.",
+    },
+  ],
+};
+
 type SearchOutput = {
   meta: { count: number };
   results: Array<{ id: string }>;
 };
 
-async function runFixtureSearch(opts: SearchOpts): Promise<{ exitCode: number; output: SearchOutput }> {
+async function runFixtureSearch(
+  opts: SearchOpts,
+  response: SearchResponse = fixture,
+): Promise<{ exitCode: number; output: SearchOutput }> {
   let stdout = "";
   const originalWrite = process.stdout.write;
   process.stdout.write = ((chunk: string | Uint8Array) => {
@@ -31,7 +93,7 @@ async function runFixtureSearch(opts: SearchOpts): Promise<{ exitCode: number; o
   }) as typeof process.stdout.write;
 
   try {
-    const exitCode = await runSearch(opts, { apiGet: async () => fixture });
+    const exitCode = await runSearch(opts, { apiGet: async () => response });
     return { exitCode, output: JSON.parse(stdout) as SearchOutput };
   } finally {
     process.stdout.write = originalWrite;
@@ -98,6 +160,43 @@ describe("search URL", () => {
 });
 
 describe("runSearch failure handling", () => {
+  test("matches whole query tokens instead of substrings", async () => {
+    const care = await runFixtureSearch(
+      { query: "care", limit: 100, format: "json" },
+      filteringFixture,
+    );
+    expect(care.output.results.map(({ id }) => id)).toEqual(["health-care"]);
+
+    const healthCare = await runFixtureSearch(
+      { query: "health care", limit: 100, format: "json" },
+      filteringFixture,
+    );
+    expect(healthCare.output.results.map(({ id }) => id)).toEqual(["health-care"]);
+  });
+
+  test("matches query text without diacritics", async () => {
+    const result = await runFixtureSearch(
+      { query: "atención", limit: 100, format: "json" },
+      filteringFixture,
+    );
+
+    expect(result.output.results.map(({ id }) => id)).toEqual(["accented"]);
+  });
+
+  test("requires exact normalized category equality", async () => {
+    const result = await runFixtureSearch(
+      { category: "medical", limit: 100, format: "json" },
+      filteringFixture,
+    );
+
+    expect(result.output.results.map(({ id }) => id)).toEqual([
+      "healthcare",
+      "health-care",
+      "health-only",
+      "medical-exact",
+    ]);
+  });
+
   test("matches query tokens across title, company, description, category, and location", async () => {
     const cases = [
       { query: "patient care", ids: ["2091069"] },

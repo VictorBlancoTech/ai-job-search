@@ -34,10 +34,11 @@ La API publica alojada puede ignorar `search`, `category` y `limit` en algunas
 respuestas. El CLI sigue enviando esos parametros para aprovechar una futura
 version del endpoint, pero aplica siempre la correccion localmente:
 
-- `--query` busca sin distinguir mayusculas en titulo, empresa, descripcion sin
-  HTML, categoria y localizacion; todas las palabras deben estar presentes.
-- `--category` exige coincidencia sin distinguir mayusculas con la categoria de
-  la oferta.
+- `--query` tokeniza sin distinguir mayusculas ni diacriticos el titulo, empresa,
+  descripcion sin HTML, categoria y localizacion; todas las palabras deben estar
+  presentes como tokens completos.
+- `--category` exige igualdad exacta, tras normalizar mayusculas, diacriticos y
+  espacios, con la categoria de la oferta; no incluye categorias adyacentes.
 - `--limit` se aplica despues de los filtros.
 
 Por tanto, una busqueda correcta puede descargar primero la pagina completa de
