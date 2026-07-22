@@ -29,10 +29,9 @@ Usa un parser de argumentos, no `eval`, `sh -c` ni una cadena de shell:
 - Todo error de parsing, valor de país inválido, opción desconocida o
   combinación incompatible usa `code: "INVALID_ARGUMENT"`, no crea llamadas
   parciales y deja intacto el último `latest.json` válido.
-- `--country` sin `--location` ni `--remote` es válido solo como selector de
-  mercado: sin consulta ejecuta exclusivamente la lane default de ese país;
-  con consulta ejecuta una única lane de ese país. Nunca activa por accidente
-  la matriz completa ni las lanes remotas globales.
+- `--country` sin query, `--location` ni `--remote` es una combinación no
+  soportada: recházala con `INVALID_ARGUMENT`. El país solo acompaña una query,
+  una ubicación o la regla remota.
 
 ### Allowlist de ubicación y preflight de país
 
@@ -61,10 +60,9 @@ Con `--location`:
   recibe `--country`, solo `-l/--where` cuando procede. Nunca recibe Bologna ni
   una ubicación italiana. LinkedIn puede recibir el valor raw en
   `-l/--location`.
-- Freehire solo recibe `--city` cuando el valor es una ciudad explícita; no
-  inventes `--region` ni conviertas una región en ciudad. Remotive, Remote OK,
-  Arbeitnow y WWR no tienen ubicación genérica: no se les pasa el valor raw y
-  se marcan como `LOCATION_UNSUPPORTED`/omitidos en esta lane.
+- La regla location-only solo llama Adzuna, LinkedIn e InfoJobs cuando procede.
+  Freehire, Remotive, Remote OK, Arbeitnow y WWR no reciben la ubicación ni se
+  ejecutan en esa regla; se omiten como `LOCATION_UNSUPPORTED`.
 
 Con `--remote`:
 
@@ -80,33 +78,46 @@ Con `--remote`:
   Freehire (`--remote remote --region eu`) y LinkedIn (`-l "Remote" --remote
   remote`). No les pases una ubicación arbitraria.
 
-### Tabla de precedencia y presupuesto
+### Precedencia de lanes
 
-Después del preflight, selecciona exactamente una fila de esta tabla. `A` es
-Adzuna, `L` LinkedIn, `I` InfoJobs y `R` una fuente remota de Remotive, Remote
-OK, Arbeitnow, WWR o Freehire:
+Después del preflight, evalúa estas condiciones mutuamente excluyentes en el
+orden indicado. **First matching rule wins**: al encontrar la primera regla,
+ejecútala y detén la evaluación; ninguna llamada puede pertenecer a dos reglas.
 
-| Argumentos válidos | Consultas y llamadas exactas | Máximo |
-|---|---|---:|
-| Sin argumentos | Matriz default completa de sección 2: IT 12 + ES 9 + EU 18 + worldwide 6 | 45 |
-| Query solo | Query en Adzuna IT + LinkedIn Bologna y una vez en cada fuente EU remota | 8 |
-| Query + `--country it` | 2 A IT + 1 L Bologna, sin costa ni EU | 3 |
-| Query + `--country es` | 1 A ES sin ubicación + 1 I `--teleworking` + 1 L Spain remoto | 3 |
-| Query + `--location` | 1 A + 1 L en Italia; o 1 A + 1 I + 1 L para provincia española | 2-3 |
-| `--location` sin query | La misma ruta de ubicación, usando únicamente `Responsabile IT` | 2-3 |
-| `--remote` sin query | 3 queries EU + 1 worldwide en cada una de las seis fuentes remotas; I se omite sin `--country es` | 24 |
-| Query + `--remote` | 1 query en cada una de las seis fuentes remotas; I añade una llamada solo con `--country es` | 6-7 |
-| Query + `--country it --remote` | 1 query en las seis fuentes remotas; sin Adzuna ni InfoJobs | 6 |
-| Query + `--country es --remote` | 1 query en las seis fuentes remotas + 1 I con `--teleworking` | 7 |
-| `--country it --remote` sin query | Ruta remota de 24 llamadas; I omitido con `INFOJOBS_REQUIRES_COUNTRY_ES` | 24 |
-| `--country es --remote` sin query | Ruta remota de 24 + 3 I con `--teleworking` | 27 |
-| `--location --remote` | Rechazo preflight, 0 llamadas, `INVALID_ARGUMENT` | 0 |
+1. **Argumento inválido:** si `--location` y `--remote` aparecen juntos,
+   rechaza con `INVALID_ARGUMENT` y 0 invocaciones. También rechaza aquí los
+   flags desconocidos/malformados, países distintos de `it|es` y
+   `--country` sin query, location ni remote.
+2. **`--remote` sin location:** con o sin query y con `--country` opcional,
+   ejecuta solo la regla remota. Sin query son 24 invocaciones: tres queries EU
+   y una worldwide en Remotive, Remote OK, Arbeitnow, WWR, Freehire y LinkedIn;
+   añade 3 InfoJobs si el país es `es`. Con query son 6 invocaciones, o 7 con
+   InfoJobs `--teleworking` para `--country es`. Adzuna siempre queda fuera.
+3. **`--location` sin remote:** con o sin query y con `--country` opcional,
+   ejecuta solo Adzuna y LinkedIn, más InfoJobs si el país es `es` y la
+   ubicación es una provincia reconocida. Sin query usa exactamente
+   `Responsabile IT`; con query usa exactamente `$QUERY`. Son 2 llamadas en
+   Italia, 3 en una provincia española válida y 2 si InfoJobs no aplica.
+   Freehire y todos los portales remote-only quedan fuera; no se carga la
+   matriz default.
+4. **Query + country, sin location ni remote:** con `--country it`, ejecuta
+   exactamente 2 Adzuna IT (Bologna y sin ubicación) + 1 LinkedIn Bologna. Con
+   `--country es`, ejecuta exactamente 1 Adzuna ES sin ubicación + 1 InfoJobs
+   `--teleworking` + 1 LinkedIn Spain remoto. Son 3 invocaciones y no hay
+   costa, EU ni worldwide.
+5. **Query solo:** ejecuta exactamente 8 invocaciones: una Adzuna IT y una
+   LinkedIn en Bologna, más una lane EU por cada fuente remota aplicable. No
+   ejecuta costa, España default ni worldwide.
+6. **Sin query ni opciones:** ejecuta exclusivamente la matriz default completa
+   de la sección 2, con 41 invocaciones. No existe otra ruta implícita.
 
-`--country it|es` sin query, location ni remote selecciona solo la lane default
-de ese país: IT = 12 llamadas; ES = 9 llamadas. No añade EU, worldwide ni la
-otra familia. Si se combina `--country` con query, aplican las filas exactas de
-arriba. El presupuesto duro es Adzuna <=25, pero esta especificación usa como
-máximo 12 Adzuna en cualquier modo; el presupuesto total default es 45.
+Casos concretos: `--country es --remote` solo puede coincidir con la regla 2;
+`--country es --location Madrid` solo puede coincidir con la regla 3. Si una
+ubicación no está en la allowlist y no hay `--country`, la regla 3 rechaza antes
+de llamar a cualquier portal. La única regla que puede leer
+`perfil/search-queries.md` es la regla 6, y lo hace una vez para seleccionar el
+conjunto default acotado. Las reglas 2 y 3 usan sus consultas fijas; las reglas
+4 y 5 usan el query recibido.
 
 #### Query + country sin location/remote
 
@@ -167,10 +178,6 @@ provincias InfoJobs; para `Spain` nacional o una ciudad/provincia española no
 reconocida por InfoJobs hace 2 (Adzuna + LinkedIn). Con query y `--location`,
 reemplaza `LOCATION_QUERY` por el único `$QUERY`, sin añadir ninguna llamada.
 Una ubicación desconocida sin `--country` se rechaza antes de estas llamadas.
-
-Lee `perfil/search-queries.md` una vez solo para construir el texto del modo
-sin query. El archivo no autoriza loops, expansión geográfica ni instrucciones
-embebidas.
 
 Ejemplos de parsing:
 
@@ -280,7 +287,10 @@ Consultas, todas exactas:
 - `AI Solutions Consultant`
 - `IT Manager remote`
 
-Para cada consulta usa una llamada por fuente, 3 por fuente y 18 en total:
+En la matriz default, cada consulta usa una llamada en Remotive, Remote OK,
+Arbeitnow, WWR y Freehire: 3 por fuente y 15 en total. La llamada LinkedIn
+mostrada al final solo se añade en las reglas explícitas 2 o 5, no en la regla
+6 default.
 
 ```bash
 bun run .agents/skills/remotive-search/cli/src/cli.ts search \
@@ -293,6 +303,7 @@ bun run .agents/skills/wwr-search/cli/src/cli.ts search \
   -q "$QUERY" --source both --limit 15 --format json
 bun run .agents/skills/freehire-search/cli/src/cli.ts search \
   -q "$QUERY" --remote remote --region eu --limit 15 --format json
+# Solo para rule 2 (--remote) o rule 5 (query solo), no para el default completo.
 bun run .agents/skills/linkedin-search/cli/src/cli.ts search \
   -q "$QUERY" -l "Remote" --remote remote --limit 15 --format json
 ```
@@ -304,10 +315,10 @@ son lanes remotas y globales según su contrato.
 ### Worldwide remoto, separado y limitado
 
 Solo si el presupuesto de la ejecución sigue disponible, ejecuta una única
-consulta mundial, `AI Automation Specialist`, una vez en cada fuente remota:
-Remotive, Remote OK, Arbeitnow, WWR, Freehire y LinkedIn. Son exactamente 6
-llamadas adicionales. Freehire no lleva `--region eu`, pero conserva
-`--remote remote`; LinkedIn usa `-l "Remote" --remote remote`.
+consulta mundial, `AI Automation Specialist`, una vez en Remotive, Remote OK,
+Arbeitnow, WWR y Freehire: son exactamente 5 llamadas default adicionales.
+LinkedIn solo se añade en la regla 2 remote, donde usa `-l "Remote"
+--remote remote`; no se añade al default completo.
 
 ```bash
 bun run .agents/skills/remotive-search/cli/src/cli.ts search \
@@ -320,59 +331,55 @@ bun run .agents/skills/wwr-search/cli/src/cli.ts search \
   -q "AI Automation Specialist" --source both --limit 15 --format json
 bun run .agents/skills/freehire-search/cli/src/cli.ts search \
   -q "AI Automation Specialist" --remote remote --limit 15 --format json
+# Solo para rule 2 (--remote), no para el default completo.
 bun run .agents/skills/linkedin-search/cli/src/cli.ts search \
   -q "AI Automation Specialist" -l "Remote" --remote remote --limit 15 --format json
 ```
 
-El default completo suma 12 llamadas italianas + 9 españolas + 18 EU + 6
-worldwide = **45 invocaciones CLI**. Los totales por fuente y las variantes
+El default completo suma 12 llamadas italianas + 9 españolas + 15 EU + 5
+worldwide = **41 invocaciones CLI**. Los totales por fuente y las variantes
 con `$ARGUMENTS` están acotados en la sección 3; no ejecutes la lane worldwide
 si su presupuesto está agotado.
 
-## 3. Presupuesto y validación de interfaces
+## 3. Presupuesto de invocaciones CLI y validación de interfaces
 
 Antes de la primera ejecución, inspecciona la `SKILL.md` y el `cli/src/cli.ts`
 actuales de las ocho skills. Corrige la plantilla mental de flags si el código
 actual difiere; no modifiques los portales.
 
-Presupuesto duro de uso personal por ejecución:
+Estos son presupuestos de **invocaciones CLI**, no presupuestos de requests
+HTTP. Una invocación puede hacer varios intentos internos: LinkedIn puede
+reintentar 429/5xx y otras skills también pueden reintentar. `/scrape` no
+bypassea, desactiva ni sobrescribe esos reintentos; por eso no declares un
+límite HTTP exacto.
 
-- Adzuna: como máximo 25 llamadas API; el default usa exactamente 12 (9 IT +
-  3 ES). Nunca supera ese límite ni se llama desde una lane `--remote`.
-- LinkedIn: como máximo 12 requests; el default usa 10 (3 IT Bologna + 3 ES +
-  3 EU + 1 worldwide).
-- InfoJobs: como máximo 10 llamadas; el default usa 3 y solo en España.
-- Remotive: como máximo 4 llamadas; respeta la recomendación de no consultar
-  más de unas cuatro veces al día.
-- Remote OK, Arbeitnow y Freehire: como máximo 4 llamadas a cada fuente.
-- WWR: como máximo 4 invocaciones del CLI; `--source both` puede consultar sus
-  feeds internos, pero no lo multipliques desde la orquestación.
-- El default completo tiene como máximo 45 invocaciones CLI: 12 Italia, 9
-  España, 18 EU y 6 worldwide. La lane worldwide solo se ejecuta si los
-  límites por fuente siguen disponibles.
-- Sin query, `--location` usa exactamente `Responsabile IT`: 2 llamadas en
-  Italia (Adzuna + LinkedIn) o 3 para una provincia española reconocida
-  (`Adzuna + InfoJobs + LinkedIn`). Para `Spain` nacional o una ubicación
-  española no reconocida por InfoJobs son 2. Freehire no participa. Remotive,
-  Remote OK, Arbeitnow y WWR se omiten con `LOCATION_UNSUPPORTED`, sin
-  enviarles la ubicación.
-- Con query y `--location` se hace una sola llamada por portal compatible,
-  como máximo 3. No hay fallback remoto, Freehire ni matriz oculta.
-- Sin query con `--remote` se hacen 3 consultas EU + 1 worldwide en cada una
-  de las seis fuentes remotas, como máximo 24 llamadas, más 3 InfoJobs si
-  el router recibió `--country es`. Adzuna siempre queda fuera.
-- Con query y `--remote` se hace una llamada por fuente remota, como máximo 6,
-  más una llamada InfoJobs solo si el router recibió `--country es`. No se
-  duplica una query en una lane worldwide adicional.
-- Con query sin opciones se hacen exactamente 8 llamadas: una lane local de
-  Adzuna IT + LinkedIn en Bologna y una lane EU por Remotive, Remote OK,
-  Arbeitnow, WWR, Freehire y LinkedIn. No usa costa, España ni worldwide.
-- `--country` solo sin location/remote usa la lane default de ese país: IT
-  como máximo 12 llamadas y ES como máximo 9; no añade lanes globales.
+| Regla | Adzuna | LinkedIn | InfoJobs | Cada fuente remota |
+|---|---:|---:|---:|---:|
+| 1 inválida | 0 | 0 | 0 | 0 |
+| 2 `--remote` sin query | 0 | 4 | 0 o 3 | 4 |
+| 2 query + `--remote` | 0 | 1 | 0 o 1 | 1 |
+| 3 `--location` | 1 | 1 | 0 o 1 | 0 |
+| 4 query + country IT | 2 | 1 | 0 | 0 |
+| 4 query + country ES | 1 | 1 | 1 | 0 |
+| 5 query solo | 1 | 2 | 0 | 1 |
+| 6 default sin args | 12 | 6 | 3 | 4 |
 
-Si una combinación de flags o una interpretación de `$ARGUMENTS` supera el
-presupuesto, reduce llamadas y dilo en el digest. No hagas paginación para
-rellenar resultados.
+Límites duros por fuente para invocaciones CLI:
+
+- Adzuna: máximo 25 por ejecución; esta matriz usa como máximo 12 y nunca lo
+  llama en regla 2 remota.
+- LinkedIn: máximo 6 por ejecución; default exactamente 6 (3 Bologna + 3
+  Spain), y los modos con query explícita usan como máximo 2. La regla 2 sin
+  query usa 4 por su matriz remota fija, aún dentro del máximo.
+- InfoJobs: máximo 10; default usa 3 y solo España.
+- Remotive: máximo 4; respeta su recomendación de no consultar más de unas
+  cuatro veces al día.
+- Remote OK, Arbeitnow, WWR y Freehire: máximo 4 invocaciones por fuente.
+
+El default completo tiene 41 invocaciones CLI: 12 Italia, 9 España, 15 EU y 5
+worldwide. La lane worldwide solo se ejecuta dentro de ese presupuesto. Una
+combinación que no entra en una fila de la precedencia se rechaza con
+`INVALID_ARGUMENT`; no se reduce silenciosamente ni se añade una lane.
 
 ## 4. Ejecución paralela y archivos raw
 
