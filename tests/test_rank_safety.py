@@ -118,7 +118,9 @@ def test_latest_rejects_duplicate_derived_job_keys():
         "javascript:alert(1)",
         "data:text/html,hello",
         "https://example.com/contact/apply@example.com",
-        "https://example.com/jobs/1234567",
+        "https://example.com/jobs/123-456-7890",
+        "https://example.com/jobs/1234567?phone=%2B39%20324%20986%208002",
+        "https://example.com/jobs/1234567#phone-%2B39%20324%20986%208002",
         "https://example.com/Via%20Roma%2012",
         "https://example.com/jobs/jane%2540example.com",
         "https://example.com/jobs/%252B39%2520324%2520986%25208002",
@@ -136,7 +138,16 @@ def test_apply_url_rejects_non_http_contact_and_phone_urls(url):
 
 def test_apply_url_accepts_http_url_with_valid_host():
     assert is_safe_apply_url("https://example.com/jobs/123")
+    assert is_safe_apply_url("https://example.com/jobs/1234567")
+    assert is_safe_apply_url("https://www.linkedin.com/jobs/view/1234567890")
     assert is_safe_apply_url("http://localhost:8080/job")
+
+
+def test_latest_accepts_linkedin_numeric_job_id_url():
+    payload = valid_latest_payload()
+    payload["results"][0]["url"] = "https://www.linkedin.com/jobs/view/1234567890"
+
+    assert validate_latest_payload(payload) == []
 
 
 def test_nullable_latest_result_fields_are_valid():
