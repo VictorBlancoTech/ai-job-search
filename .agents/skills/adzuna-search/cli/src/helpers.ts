@@ -12,8 +12,19 @@ export const API_BASE = "https://api.adzuna.com/v1/api/jobs"
 
 const UA = "adzuna-search-skill/1.0 (+https://developer.adzuna.com)"
 
+export type ErrorWriter = (error: string, code: string) => void
+
 export function writeError(error: string, code: string): void {
   process.stderr.write(JSON.stringify({ error, code }) + "\n")
+}
+
+export class InvalidArgumentError extends Error {
+  readonly code = "INVALID_ARGUMENT"
+
+  constructor(message: string) {
+    super(message)
+    this.name = "InvalidArgumentError"
+  }
 }
 
 /**
@@ -39,15 +50,25 @@ export function loadEnvFile(path: string): Record<string, string> {
   return env
 }
 
+/** Load the .env file at a repository root. */
+export function loadEnv(repoRoot: string): Record<string, string> {
+  return loadEnvFile(join(repoRoot, ".env"))
+}
+
 /**
  * Adzuna credentials: process.env wins, then the repo-root .env (five levels
  * up from cli/src). Returns null when either value is missing — the CLI maps
  * that to exit code 2 with a clear message.
  */
-export function getCredentials(): { appId: string; appKey: string } | null {
-  const fileEnv = loadEnvFile(join(import.meta.dir, "..", "..", "..", "..", "..", ".env"))
-  const appId = process.env.ADZUNA_APP_ID || fileEnv.ADZUNA_APP_ID
-  const appKey = process.env.ADZUNA_APP_KEY || fileEnv.ADZUNA_APP_KEY
+export type Environment = Record<string, string | undefined>
+
+export function getCredentials(
+  repoRoot = join(import.meta.dir, "..", "..", "..", "..", ".."),
+  environment: Environment = process.env,
+): { appId: string; appKey: string } | null {
+  const fileEnv = loadEnv(repoRoot)
+  const appId = environment.ADZUNA_APP_ID || fileEnv.ADZUNA_APP_ID
+  const appKey = environment.ADZUNA_APP_KEY || fileEnv.ADZUNA_APP_KEY
   if (!appId || !appKey) return null
   return { appId, appKey }
 }
@@ -61,15 +82,25 @@ function sleep(ms: number): Promise<void> {
  * a 2s backoff; a connection failure fails fast with a clear message, so an
  * outage degrades this source quickly rather than hanging the caller.
  */
-export async function apiGet<T>(url: string): Promise<T> {
+export interface ApiGetOptions {
+  fetchFn?: typeof fetch
+  sleepFn?: (ms: number) => Promise<void>
+  retryDelayMs?: number
+  timeoutMs?: number
+}
+
+export async function apiGet<T>(url: string, options: ApiGetOptions = {}): Promise<T> {
   const maxRetries = 1
+  const fetchFn = options.fetchFn ?? globalThis.fetch
+  const sleepFn = options.sleepFn ?? sleep
+  const retryDelayMs = options.retryDelayMs ?? 2000
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     let response: Response
     try {
-      response = await fetch(url, {
+      response = await fetchFn(url, {
         headers: { Accept: "application/json", "User-Agent": UA },
         redirect: "follow",
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(options.timeoutMs ?? 20000),
       })
     } catch (e) {
       throw new Error(
@@ -81,7 +112,7 @@ export async function apiGet<T>(url: string): Promise<T> {
       if (attempt === maxRetries) {
         throw new Error(`Adzuna API request failed: ${response.status} ${response.statusText}`)
       }
-      await sleep(2000)
+      await sleepFn(retryDelayMs)
       continue
     }
 
@@ -159,6 +190,7 @@ export function toResult(j: AdzunaJob): JobResult {
 // Spanish postings, plus a few typographic marks.
 const NAMED_ENTITIES: Record<string, string> = {
   amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
+  euro: "€", ndash: "–", mdash: "—",
   agrave: "à", egrave: "è", igrave: "ì", ograve: "ò", ugrave: "ù",
   aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú",
   Agrave: "À", Egrave: "È", Igrave: "Ì", Ograve: "Ò", Ugrave: "Ù",
@@ -178,6 +210,71 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&([a-zA-Z]+);/g, (m, name) => NAMED_ENTITIES[name] ?? m)
 }
 
+function findTagEnd(input: string, start: number): number {
+  let quote: '"' | "'" | null = null
+  for (let i = start; i < input.length; i++) {
+    const char = input[i]
+    if (quote) {
+      if (char === quote) quote = null
+    } else if (char === '"' || char === "'") {
+      quote = char
+    } else if (char === ">") {
+      return i
+    }
+  }
+  return -1
+}
+
+function stripTagsPreservingBreaks(html: string): string {
+  let text = ""
+  let cursor = 0
+
+  while (cursor < html.length) {
+    const start = html.indexOf("<", cursor)
+    if (start === -1) {
+      text += html.slice(cursor)
+      break
+    }
+
+    text += html.slice(cursor, start)
+
+    if (html.startsWith("<!--", start)) {
+      const commentEnd = html.indexOf("-->", start + 4)
+      if (commentEnd === -1) break
+      cursor = commentEnd + 3
+      continue
+    }
+
+    const end = findTagEnd(html, start + 1)
+    if (end === -1) {
+      text += html.slice(start)
+      break
+    }
+
+    const content = html.slice(start + 1, end)
+    const match = content.match(/^\s*(\/?)\s*([A-Za-z][A-Za-z0-9:-]*)\b/)
+    if (!match) {
+      // Leave non-tag angle-bracket text alone instead of deleting it.
+      text += html.slice(start, end + 1)
+      cursor = end + 1
+      continue
+    }
+
+    const closing = match[1] === "/"
+    const name = match[2].toLowerCase()
+    if (!closing && name === "br") {
+      text += "\n"
+    } else if (closing && (name === "p" || name === "li" || name === "ul" || name === "ol" || name === "div" || /^h[1-6]$/.test(name))) {
+      text += "\n"
+    } else {
+      text += " "
+    }
+    cursor = end + 1
+  }
+
+  return text
+}
+
 /**
  * Strip HTML into readable prose: block/line-break tags become newlines,
  * entities are decoded, tags removed. Always returns a string ("" for empty
@@ -185,11 +282,9 @@ function decodeHtmlEntities(text: string): string {
  */
 export function stripHtml(html: string | null | undefined): string {
   if (!html) return ""
-  const withBreaks = html
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|li|ul|ol|div|h\d)>/gi, "\n")
-  return decodeHtmlEntities(withBreaks.replace(/<[^>]+>/g, " "))
-    .replace(/[ \t]+/g, " ")
+  return decodeHtmlEntities(stripTagsPreservingBreaks(html))
+    .replace(/\r\n?/g, "\n")
+    .replace(/[^\S\r\n]+/g, " ")
     .replace(/ *\n */g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim()
@@ -202,8 +297,10 @@ export interface Flags {
 
 // Short-flag aliases.
 const ALIAS: Record<string, string> = { q: "query", l: "where", n: "limit" }
+const OPTION_NAMES = new Set(["query", "where", "country", "page", "limit", "format", "help", "h"])
+const BOOLEAN_OPTIONS = new Set(["help", "h"])
 
-/** Minimal flag parser: --flag value pairs, bare flags are boolean true. */
+/** Parse the CLI flags and reject unknown options or missing values. */
 export function parseArgs(argv: string[]): Flags {
   const flags: Flags = { _: [] }
   for (let i = 0; i < argv.length; i++) {
@@ -213,14 +310,21 @@ export function parseArgs(argv: string[]): Flags {
       continue
     }
     const name = a.replace(/^-+/, "")
+    if (!name) throw new InvalidArgumentError(`invalid option "${a}"`)
     const key = ALIAS[name] ?? name
-    const next = argv[i + 1]
-    let value: string | boolean = true
-    if (next !== undefined && !next.startsWith("-")) {
-      value = next
-      i++
+    if (!OPTION_NAMES.has(key)) throw new InvalidArgumentError(`unknown option "${a}"`)
+
+    if (BOOLEAN_OPTIONS.has(key)) {
+      flags[key] = true
+      continue
     }
-    flags[key] = value
+
+    const next = argv[i + 1]
+    if (next === undefined || next.startsWith("-")) {
+      throw new InvalidArgumentError(`${a} requires a value`)
+    }
+    flags[key] = next
+    i++
   }
   return flags
 }

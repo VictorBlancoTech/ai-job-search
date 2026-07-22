@@ -115,8 +115,9 @@ Notas del contrato:
 - Errores: JSON a stderr (`{"error": "...", "code": "..."}`) y exit 1; falta de
   credenciales: exit 2.
 
-Los formatos `table` y `plain` imprimen los mismos campos para lectura humana
-(columna `SALARY` incluida en tabla).
+Los formatos `table` y `plain` son resúmenes para lectura humana; pueden omitir
+campos largos como `description` y no sustituyen al JSON completo del contrato
+(la tabla incluye `SALARY`).
 
 ## Tests
 

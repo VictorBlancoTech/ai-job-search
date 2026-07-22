@@ -4,6 +4,8 @@ import {
   getCredentials,
   toResult,
   writeError,
+  type Environment,
+  type ErrorWriter,
   type JobResult,
   type SearchResponse,
 } from "../helpers.js"
@@ -17,7 +19,13 @@ export interface SearchOpts {
   format: "json" | "table" | "plain"
 }
 
-function buildUrl(opts: SearchOpts, creds: { appId: string; appKey: string }): string {
+export interface SearchDependencies {
+  repoRoot?: string
+  environment?: Environment
+  writeError?: ErrorWriter
+}
+
+export function buildUrl(opts: SearchOpts, creds: { appId: string; appKey: string }): string {
   const p = new URLSearchParams()
   p.set("app_id", creds.appId)
   p.set("app_key", creds.appKey)
@@ -73,10 +81,11 @@ function renderPlain(rows: JobResult[]): string {
   return rows.map(block).join("\n\n")
 }
 
-export async function runSearch(opts: SearchOpts): Promise<number> {
-  const creds = getCredentials()
+export async function runSearch(opts: SearchOpts, dependencies: SearchDependencies = {}): Promise<number> {
+  const emitError = dependencies.writeError ?? writeError
+  const creds = getCredentials(dependencies.repoRoot, dependencies.environment)
   if (!creds) {
-    writeError(
+    emitError(
       "missing Adzuna credentials: set ADZUNA_APP_ID and ADZUNA_APP_KEY (environment or repo .env)",
       "NO_CREDENTIALS",
     )
@@ -110,7 +119,7 @@ export async function runSearch(opts: SearchOpts): Promise<number> {
     }
     return 0
   } catch (e) {
-    writeError(e instanceof Error ? e.message : String(e), "SEARCH_FAILED")
+    emitError(e instanceof Error ? e.message : String(e), "SEARCH_FAILED")
     return 1
   }
 }

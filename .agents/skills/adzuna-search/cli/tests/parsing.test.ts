@@ -1,9 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { readFileSync } from "node:fs";
-import { loadEnvFile, stripHtml, toResult, type AdzunaJob } from "../src/helpers";
+import { loadEnv, loadEnvFile, stripHtml, toResult, type AdzunaJob } from "../src/helpers";
 
 // Real Adzuna API response (portal `it`, 3 results), trimmed for the fixture:
 // [0] full result without salary, [1] with salary_min+salary_max, [2] no salary.
@@ -86,9 +86,11 @@ describe("loadEnvFile — parse a .env file", () => {
   }
 
   test("parses KEY=VALUE pairs", () => {
-    const env = loadEnvFile(envFile("ADZUNA_APP_ID=7d3cc114\nADZUNA_APP_KEY=abc123\n"));
+    const path = envFile("ADZUNA_APP_ID=7d3cc114\nADZUNA_APP_KEY=abc123\n");
+    const env = loadEnvFile(path);
     expect(env.ADZUNA_APP_ID).toBe("7d3cc114");
     expect(env.ADZUNA_APP_KEY).toBe("abc123");
+    expect(loadEnv(dirname(path))).toEqual(env);
   });
 
   test("ignores comments and blank lines", () => {
@@ -110,6 +112,18 @@ describe("stripHtml", () => {
   test("block tags and <br> become newlines", () => {
     expect(stripHtml("<ul><li>Uno</li><li>Dos</li></ul>")).toBe("Uno\nDos");
     expect(stripHtml("Hola<br>mundo")).toBe("Hola\nmundo");
+  });
+
+  test("handles br attributes and quoted > or < characters in attributes", () => {
+    expect(stripHtml('<p data-note="a > b" title="x < y">Antes<br class="wide">Después<br data-x="a > b"/>Fin</p>')).toBe(
+      "Antes\nDespués\nFin",
+    );
+  });
+
+  test("decodes common currency, dash, and numeric entities", () => {
+    expect(stripHtml("<p>&euro; 10&nbsp;&ndash; 20 &mdash; &#8364; &#x2013; &#x2014;</p>")).toBe(
+      "€ 10 – 20 — € – —",
+    );
   });
 
   test("decodes numeric entities", () => {

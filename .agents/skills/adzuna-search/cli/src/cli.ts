@@ -6,7 +6,13 @@
 // or the repo-root .env); missing credentials exit with code 2.
 
 import { runSearch, type SearchOpts } from "./commands/search.js"
-import { parseArgs, writeError } from "./helpers.js"
+import {
+  InvalidArgumentError,
+  parseArgs,
+  writeError,
+  type ErrorWriter,
+  type Flags,
+} from "./helpers.js"
 
 const HELP = `adzuna-search-cli — search the official Adzuna Jobs API (portals: it, es)
 
@@ -30,59 +36,72 @@ Free tier: 25 calls/minute, 250 calls/day. Descriptions come inline with
 search results — there is no separate detail command.
 `
 
-function parseIntFlag(name: string, raw: string | boolean | string[]): number | null {
-  const val = parseInt(raw as string, 10)
-  if (isNaN(val)) {
-    writeError(`--${name} must be a number, got "${raw}"`, "BAD_ARG")
-    return null
-  }
-  return val
+function stringFlag(flags: Flags, name: string): string | undefined {
+  const value = flags[name]
+  if (value === undefined) return undefined
+  if (typeof value !== "string") throw new InvalidArgumentError(`--${name} requires a string value`)
+  return value
 }
 
-async function main(): Promise<number> {
-  const argv = process.argv.slice(2)
-  const flags = parseArgs(argv)
-  const cmd = (flags._ as string[])[0]
-
-  if (!cmd || flags.help || flags.h) {
-    process.stdout.write(HELP)
-    return cmd ? 0 : 1
+function integerFlag(name: string, raw: string | undefined, min: number, max?: number): number {
+  if (raw === undefined || !/^\d+$/.test(raw)) {
+    throw new InvalidArgumentError(`--${name} must be a non-negative integer, got "${raw ?? ""}"`)
   }
+  const value = Number(raw)
+  if (!Number.isSafeInteger(value) || value < min || (max !== undefined && value > max)) {
+    const range = max === undefined ? `>= ${min}` : `${min}..${max}`
+    throw new InvalidArgumentError(`--${name} must be in the range ${range}, got "${raw}"`)
+  }
+  return value
+}
 
-  if (cmd === "search") {
-    for (const name of ["page", "limit"] as const) {
-      if (flags[name] !== undefined) {
-        const v = parseIntFlag(name, flags[name])
-        if (v === null) return 1
-        flags[name] = String(v)
-      }
+export async function main(argv = process.argv.slice(2), emitError: ErrorWriter = writeError): Promise<number> {
+  try {
+    const flags = parseArgs(argv)
+    const positional = flags._ as string[]
+    const cmd = positional[0]
+
+    if (flags.help || flags.h) {
+      process.stdout.write(HELP)
+      return 0
     }
+    if (!cmd) throw new InvalidArgumentError("missing command: expected \"search\"")
+    if (cmd !== "search") throw new InvalidArgumentError(`unknown command "${cmd}"`)
+    if (positional.length > 1) throw new InvalidArgumentError(`unexpected argument "${positional[1]}"`)
 
-    const country = ((flags.country as string) || "it").toLowerCase()
+    const country = stringFlag(flags, "country") ?? "it"
     if (country !== "it" && country !== "es") {
-      writeError(`--country must be "it" or "es", got "${flags.country}"`, "BAD_ARG")
-      return 1
+      throw new InvalidArgumentError(`--country must be "it" or "es", got "${country}"`)
     }
 
-    const fmt = (flags.format as string) || "json"
+    const fmt = stringFlag(flags, "format") ?? "json"
+    if (fmt !== "json" && fmt !== "table" && fmt !== "plain") {
+      throw new InvalidArgumentError(`--format must be json, table, or plain, got "${fmt}"`)
+    }
+
     const opts: SearchOpts = {
-      query: typeof flags.query === "string" ? flags.query : undefined,
-      where: typeof flags.where === "string" ? flags.where : undefined,
+      query: stringFlag(flags, "query"),
+      where: stringFlag(flags, "where"),
       country,
-      page: flags.page ? Math.max(1, parseInt(flags.page as string, 10)) : 1,
-      limit: flags.limit ? Math.max(1, parseInt(flags.limit as string, 10)) : 25,
-      format: (["json", "table", "plain"].includes(fmt) ? fmt : "json") as SearchOpts["format"],
+      page: integerFlag("page", stringFlag(flags, "page") ?? "1", 1),
+      limit: integerFlag("limit", stringFlag(flags, "limit") ?? "25", 1, 50),
+      format: fmt,
     }
     return runSearch(opts)
+  } catch (e) {
+    if (e instanceof InvalidArgumentError) {
+      emitError(e.message, e.code)
+      return 2
+    }
+    throw e
   }
-
-  writeError(`Unknown command "${cmd}"`, "BAD_CMD")
-  return 1
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((e) => {
-    writeError(e instanceof Error ? e.message : String(e), "INTERNAL_ERROR")
-    process.exit(1)
-  })
+if (import.meta.main) {
+  main()
+    .then((code) => process.exit(code))
+    .catch((e) => {
+      writeError(e instanceof Error ? e.message : String(e), "INTERNAL_ERROR")
+      process.exit(1)
+    })
+}
