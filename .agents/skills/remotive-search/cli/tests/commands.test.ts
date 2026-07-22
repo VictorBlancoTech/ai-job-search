@@ -1,6 +1,9 @@
 import { describe, test, expect } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { apiGet } from "../src/helpers";
-import { buildUrl, runSearch } from "../src/commands/search";
+import { buildUrl, runSearch, type SearchOpts } from "../src/commands/search";
+import type { SearchResponse } from "../src/helpers";
 
 function jsonResponse(status: number, body: unknown, statusText = ""): Response {
   return new Response(JSON.stringify(body), {
@@ -8,6 +11,31 @@ function jsonResponse(status: number, body: unknown, statusText = ""): Response 
     statusText,
     headers: { "content-type": "application/json" },
   });
+}
+
+const fixture = JSON.parse(
+  readFileSync(join(import.meta.dir, "fixtures", "search.json"), "utf8"),
+) as SearchResponse;
+
+type SearchOutput = {
+  meta: { count: number };
+  results: Array<{ id: string }>;
+};
+
+async function runFixtureSearch(opts: SearchOpts): Promise<{ exitCode: number; output: SearchOutput }> {
+  let stdout = "";
+  const originalWrite = process.stdout.write;
+  process.stdout.write = ((chunk: string | Uint8Array) => {
+    stdout += typeof chunk === "string" ? chunk : new TextDecoder().decode(chunk);
+    return true;
+  }) as typeof process.stdout.write;
+
+  try {
+    const exitCode = await runSearch(opts, { apiGet: async () => fixture });
+    return { exitCode, output: JSON.parse(stdout) as SearchOutput };
+  } finally {
+    process.stdout.write = originalWrite;
+  }
 }
 
 describe("apiGet", () => {
@@ -70,6 +98,55 @@ describe("search URL", () => {
 });
 
 describe("runSearch failure handling", () => {
+  test("matches query tokens across title, company, description, category, and location", async () => {
+    const cases = [
+      { query: "patient care", ids: ["2091069"] },
+      { query: "STATLINX remote call", ids: ["2091069"] },
+      { query: "software development", ids: ["1919265", "1919266"] },
+      { query: "Americas Israel", ids: ["1919265", "1919266"] },
+      { query: "production AI systems", ids: ["1919266"] },
+    ];
+
+    for (const { query, ids } of cases) {
+      const result = await runFixtureSearch({ query, limit: 100, format: "json" });
+      expect(result.exitCode).toBe(0);
+      expect(result.output.results.map(({ id }) => id)).toEqual(ids);
+    }
+  });
+
+  test("filters category before applying the limit", async () => {
+    const result = await runFixtureSearch({
+      query: "senior independent",
+      category: "software development",
+      limit: 1,
+      format: "json",
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.output.meta.count).toBe(1);
+    expect(result.output.results.map(({ id }) => id)).toEqual(["1919265"]);
+
+    const categoryOnly = await runFixtureSearch({
+      category: "software development",
+      limit: 100,
+      format: "json",
+    });
+    expect(categoryOnly.output.results.map(({ id }) => id)).toEqual(["1919265", "1919266"]);
+  });
+
+  test("returns no results when the local filters do not match", async () => {
+    const result = await runFixtureSearch({
+      query: "quantum astronaut",
+      category: "Software Development",
+      limit: 100,
+      format: "json",
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.output.meta.count).toBe(0);
+    expect(result.output.results).toEqual([]);
+  });
+
   test("caps results locally when the API returns more than requested", async () => {
     let stdout = "";
     const originalWrite = process.stdout.write;

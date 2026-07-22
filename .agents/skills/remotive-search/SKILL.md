@@ -28,6 +28,22 @@ API key y el CLI no tiene dependencias de runtime: solo necesita `bun`.
 - Al mostrar resultados fuera del pipeline, conserva el enlace a la oferta y
   menciona Remotive como fuente.
 
+## Filtros locales
+
+La API publica alojada puede ignorar `search`, `category` y `limit` en algunas
+respuestas. El CLI sigue enviando esos parametros para aprovechar una futura
+version del endpoint, pero aplica siempre la correccion localmente:
+
+- `--query` busca sin distinguir mayusculas en titulo, empresa, descripcion sin
+  HTML, categoria y localizacion; todas las palabras deben estar presentes.
+- `--category` exige coincidencia sin distinguir mayusculas con la categoria de
+  la oferta.
+- `--limit` se aplica despues de los filtros.
+
+Por tanto, una busqueda correcta puede descargar primero la pagina completa de
+la API y filtrar despues; el coste de red no se reduce aunque el resultado final
+si este limitado.
+
 ## Comando
 
 ```bash

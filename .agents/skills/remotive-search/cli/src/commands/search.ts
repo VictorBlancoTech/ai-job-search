@@ -2,11 +2,13 @@ import {
   API_BASE,
   apiGet,
   encodeQuery,
+  stripHtml,
   toResult,
   writeError,
   type ApiGetOptions,
   type ErrorWriter,
   type JobResult,
+  type RemotiveJob,
   type SearchResponse,
 } from "../helpers.js"
 
@@ -30,6 +32,57 @@ export function buildUrl(opts: SearchOpts): string {
     limit: String(Math.min(Math.max(1, opts.limit), 100)),
   })
   return `${API_BASE}?${query}`
+}
+
+function normalizeText(value: string): string {
+  return value.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim()
+}
+
+function jobSearchText(job: RemotiveJob): string {
+  return normalizeText(
+    [
+      job.title,
+      job.company_name ?? "",
+      stripHtml(job.description ?? ""),
+      job.category ?? "",
+      job.candidate_required_location ?? "",
+    ].join(" "),
+  )
+}
+
+function isWordCharacter(character: string | undefined): boolean {
+  return character !== undefined && /[\p{L}\p{N}]/u.test(character)
+}
+
+function includesToken(text: string, token: string): boolean {
+  let start = 0
+  while (true) {
+    const index = text.indexOf(token, start)
+    if (index === -1) return false
+    const before = text[index - 1]
+    const after = text[index + token.length]
+    if (!isWordCharacter(before) && !isWordCharacter(after)) return true
+    start = index + 1
+  }
+}
+
+function matchesQuery(job: RemotiveJob, rawQuery?: string): boolean {
+  const query = normalizeText(rawQuery ?? "")
+  if (!query) return true
+
+  const text = jobSearchText(job)
+  if (text.includes(query)) return true
+  return query.split(" ").every((token) => includesToken(text, token))
+}
+
+function matchesCategory(job: RemotiveJob, rawCategory?: string): boolean {
+  const category = normalizeText(rawCategory ?? "")
+  if (!category) return true
+  return normalizeText(job.category ?? "").includes(category)
+}
+
+function filterJobs(jobs: RemotiveJob[], opts: SearchOpts): RemotiveJob[] {
+  return jobs.filter((job) => matchesQuery(job, opts.query) && matchesCategory(job, opts.category))
 }
 
 function shortDate(date: string | null): string {
@@ -79,9 +132,10 @@ export async function runSearch(opts: SearchOpts, dependencies: SearchDependenci
     const data = dependencies.apiGet
       ? await dependencies.apiGet<SearchResponse>(url)
       : await apiGet<SearchResponse>(url, { fetchFn: dependencies.fetchFn })
-    // The public endpoint currently ignores `limit` on some responses, so cap
-    // locally as well as passing it through in the request.
-    const rows = (data.jobs ?? []).slice(0, opts.limit).map(toResult)
+    const filteredJobs = filterJobs(data.jobs ?? [], opts)
+    // The public endpoint currently ignores filters and `limit` on some
+    // responses, so apply them locally as well as passing them through.
+    const rows = filteredJobs.slice(0, opts.limit).map(toResult)
 
     if (opts.format === "table") {
       process.stdout.write(renderTable(rows) + "\n")
