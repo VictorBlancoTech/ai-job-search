@@ -123,31 +123,49 @@ function formatSalary(minValue: unknown, maxValue: unknown): string | null {
   return min !== null && max !== null ? `${min}-${max}` : null
 }
 
+function validCalendarDate(year: number, month: number, day: number): boolean {
+  const calendarDate = new Date(0)
+  calendarDate.setUTCFullYear(year, month - 1, day)
+  calendarDate.setUTCHours(0, 0, 0, 0)
+  return (
+    calendarDate.getUTCFullYear() === year &&
+    calendarDate.getUTCMonth() === month - 1 &&
+    calendarDate.getUTCDate() === day
+  )
+}
+
 function normalizeDate(value: unknown): string | null {
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10)
+    if (!Number.isFinite(value.getTime())) return null
+    const year = value.getUTCFullYear()
+    return year >= 0 && year <= 9999 ? value.toISOString().slice(0, 10) : null
   }
   if (typeof value !== "string") return null
 
   const dateText = value.trim()
   if (!dateText) return null
-  const isoDate = dateText.match(/^(\d{4})-(\d{2})-(\d{2})(?=$|T|[ \t])/)
-  const parsed = new Date(dateText)
-  if (Number.isNaN(parsed.getTime())) return null
-  if (!isoDate) return parsed.toISOString().slice(0, 10)
+  const isoDate = dateText.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(Z|[+-]\d{2}:\d{2})?)?$/,
+  )
+  if (!isoDate) return null
 
   const year = Number(isoDate[1])
   const month = Number(isoDate[2])
   const day = Number(isoDate[3])
-  const calendarDate = new Date(Date.UTC(year, month - 1, day))
-  if (
-    calendarDate.getUTCFullYear() !== year ||
-    calendarDate.getUTCMonth() !== month - 1 ||
-    calendarDate.getUTCDate() !== day
-  ) {
+  const hour = isoDate[4] === undefined ? 0 : Number(isoDate[4])
+  const minute = isoDate[5] === undefined ? 0 : Number(isoDate[5])
+  const second = isoDate[6] === undefined ? 0 : Number(isoDate[6])
+  if (!validCalendarDate(year, month, day) || hour > 23 || minute > 59 || second > 59) {
     return null
   }
-  return isoDate[0]
+
+  const offset = isoDate[7]
+  if (offset && offset !== "Z") {
+    const offsetHour = Number(offset.slice(1, 3))
+    const offsetMinute = Number(offset.slice(4, 6))
+    if (offsetHour > 23 || offsetMinute > 59) return null
+  }
+  return `${isoDate[1]}-${isoDate[2]}-${isoDate[3]}`
 }
 
 export function toResult(job: RemoteOkJob): JobResult {

@@ -73,6 +73,17 @@ describe("toResult - reshape a RemoteOK job into the portal-skill contract", () 
       } as unknown as RemoteOkJob).date,
     ).toBe("2026-07-21")
     expect(toResult({ ...fixtureJob("9004"), date: "2026-02-30" }).date).toBeNull()
+    expect(toResult({ ...fixtureJob("9004"), date: "2026-02-30Z" }).date).toBeNull()
+    expect(toResult({ ...fixtureJob("9004"), date: "2026/02/30" }).date).toBeNull()
+    expect(toResult({ ...fixtureJob("9004"), date: "+010000-01-01T00:00:00Z" }).date).toBeNull()
+    expect(
+      toResult({ ...fixtureJob("9004"), date: new Date("invalid") } as unknown as RemoteOkJob).date,
+    ).toBeNull()
+    const extendedDate = new Date(0)
+    extendedDate.setUTCFullYear(10000, 0, 1)
+    expect(
+      toResult({ ...fixtureJob("9004"), date: extendedDate } as unknown as RemoteOkJob).date,
+    ).toBeNull()
   })
 })
 
