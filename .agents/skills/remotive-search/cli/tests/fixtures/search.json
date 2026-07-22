@@ -1,0 +1,42 @@
+{
+  "job-count": 41,
+  "total-job-count": 41,
+  "jobs": [
+    {
+      "id": 2091069,
+      "url": "https://remotive.com/remote-jobs/medical/patient-care-specialist-2091069",
+      "title": "Patient Care Specialist",
+      "company_name": "STATLINX",
+      "category": "Medical",
+      "job_type": "full_time",
+      "publication_date": "2026-07-16T13:28:02",
+      "candidate_required_location": "USA",
+      "salary": "$36k",
+      "description": "<p>This position will involve answering inbound calls for large hospital networks during our daytime shifts in a remote call center setting.</p><ul><li>Professional mannerisms and good computer skills</li><li>Reliable internet and a quiet dedicated space</li></ul>"
+    },
+    {
+      "id": 1919265,
+      "url": "https://remotive.com/remote-jobs/software-development/senior-independent-software-developer-1919265",
+      "title": "Senior Independent Software Developer",
+      "company_name": "A.Team",
+      "category": "Software Development",
+      "job_type": "contract",
+      "publication_date": "2026-07-16T10:10:51",
+      "candidate_required_location": "Americas, Europe, Israel",
+      "salary": "$90 - $150 /hour",
+      "description": "<p>A.Team is a VC-backed home on the internet for senior independent software builders.</p><p>Work alongside friends old &amp; new on meaningful missions.</p>"
+    },
+    {
+      "id": 1919266,
+      "url": "https://remotive.com/remote-jobs/software-development/senior-independent-ai-engineer-architect-1919266",
+      "title": "Senior Independent AI Engineer / Architect",
+      "company_name": "A.Team",
+      "category": "Software Development",
+      "job_type": "contract",
+      "publication_date": "2026-07-16T10:10:45",
+      "candidate_required_location": "Americas, Europe, Israel",
+      "salary": "$120 - $170 /hour",
+      "description": "<p>Senior AI engineers build production AI systems for startups, enterprises, and global companies.</p><p>Recent work includes agent architectures, retrieval, evaluation, and reliability infrastructure.</p>"
+    }
+  ]
+}
