@@ -39,7 +39,7 @@ _SECRET_RE = re.compile(
 _SAFE_HOST_LABEL_RE = re.compile(
     r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"
 )
-_NUMERIC_PATH_SEGMENT_RE = re.compile(r"^[0-9]+$")
+_JOB_ID_PATH_RE = re.compile(r"(?:(?<=/)|(?<=-)|(?<=_))[0-9]{7,12}(?=$|/)")
 
 _REVIEWER_KEYS = {
     "job_key",
@@ -210,17 +210,12 @@ def _valid_host(host: Optional[str]) -> bool:
     return bool(labels) and all(_SAFE_HOST_LABEL_RE.fullmatch(label) for label in labels)
 
 
-def _mask_numeric_path_segments(value: str) -> str:
+def _mask_job_id_path_sequences(value: str) -> str:
     try:
         parts = urlsplit(value)
     except ValueError:
         return value
-    path = "/".join(
-        "[NUMERIC_PATH_SEGMENT]"
-        if _NUMERIC_PATH_SEGMENT_RE.fullmatch(segment)
-        else segment
-        for segment in parts.path.split("/")
-    )
+    path = _JOB_ID_PATH_RE.sub("[JOB_ID]", parts.path)
     return urlunsplit((parts.scheme, parts.netloc, path, parts.query, parts.fragment))
 
 
@@ -230,15 +225,10 @@ def _contains_formatted_phone_path(value: str) -> bool:
     except ValueError:
         return False
     for match in _PHONE_RE.finditer(path):
-        segment_start = path.rfind("/", 0, match.start()) + 1
-        segment_end = path.find("/", match.end())
-        if segment_end == -1:
-            segment_end = len(path)
-        candidate = match.group(0)
-        if path[segment_start:segment_end] != candidate:
-            return True
-        if not _NUMERIC_PATH_SEGMENT_RE.fullmatch(candidate):
-            return True
+        job_id_match = _JOB_ID_PATH_RE.search(path, match.start())
+        if job_id_match is not None and job_id_match.span() == match.span():
+            continue
+        return True
     return False
 
 
@@ -268,7 +258,7 @@ def is_safe_apply_url(value: Any) -> bool:
         return False
     return not any(
         _contains_formatted_phone_path(variant)
-        or _contains_plain_contact_pattern(_mask_numeric_path_segments(variant))
+        or _contains_plain_contact_pattern(_mask_job_id_path_sequences(variant))
         for variant in variants
     )
 

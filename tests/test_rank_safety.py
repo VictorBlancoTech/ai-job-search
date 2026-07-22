@@ -119,6 +119,7 @@ def test_latest_rejects_duplicate_derived_job_keys():
         "data:text/html,hello",
         "https://example.com/contact/apply@example.com",
         "https://example.com/jobs/123-456-7890",
+        "https://example.com/jobs/view/+393249868002",
         "https://example.com/jobs/1234567?phone=%2B39%20324%20986%208002",
         "https://example.com/jobs/1234567#phone-%2B39%20324%20986%208002",
         "https://example.com/Via%20Roma%2012",
@@ -140,6 +141,10 @@ def test_apply_url_accepts_http_url_with_valid_host():
     assert is_safe_apply_url("https://example.com/jobs/123")
     assert is_safe_apply_url("https://example.com/jobs/1234567")
     assert is_safe_apply_url("https://www.linkedin.com/jobs/view/1234567890")
+    assert is_safe_apply_url(
+        "https://it.linkedin.com/jobs/view/"
+        "service-manager-at-impresoft-4ward-4436816010"
+    )
     assert is_safe_apply_url("http://localhost:8080/job")
 
 
