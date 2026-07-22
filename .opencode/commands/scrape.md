@@ -75,8 +75,10 @@ Con `--remote`:
   con `--country it`, registra el skip `INFOJOBS_REQUIRES_COUNTRY_ES` y
   continúa.
 - Usa Remotive, Remote OK, Arbeitnow (`--remote-only`), WWR (`--source both`),
-  Freehire (`--remote remote --region eu`) y LinkedIn (`-l "Remote" --remote
-  remote`). No les pases una ubicación arbitraria.
+  Freehire (`--remote remote --region eu`) en la lane EU y LinkedIn
+  (`-l "Remote" --remote remote`). `--region eu` aplica solo a esa lane EU;
+  la lane worldwide separada de Freehire lo omite intencionadamente. No les
+  pases una ubicación arbitraria.
 
 ### Precedencia de lanes
 
