@@ -35,5 +35,11 @@ describe("CLI validation", () => {
       expect(result.error.code).toBe("INVALID_ARGUMENT");
       expect(result.error.error.length).toBeGreaterThan(0);
     }
+
+    const negativeLimit = await invoke(["search", "--limit", "-1"]);
+    expect(negativeLimit.exitCode).toBe(2);
+    expect(negativeLimit.error.code).toBe("INVALID_ARGUMENT");
+    expect(negativeLimit.error.error).toContain("range 1..50");
+    expect(negativeLimit.error.error).not.toContain("requires a value");
   });
 });

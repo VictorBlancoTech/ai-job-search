@@ -4,6 +4,7 @@ import {
   getCredentials,
   toResult,
   writeError,
+  type ApiGetOptions,
   type Environment,
   type ErrorWriter,
   type JobResult,
@@ -23,6 +24,7 @@ export interface SearchDependencies {
   repoRoot?: string
   environment?: Environment
   writeError?: ErrorWriter
+  apiGet?: <T>(url: string, options?: ApiGetOptions) => Promise<T>
 }
 
 export function buildUrl(opts: SearchOpts, creds: { appId: string; appKey: string }): string {
@@ -93,7 +95,8 @@ export async function runSearch(opts: SearchOpts, dependencies: SearchDependenci
   }
 
   try {
-    const data = await apiGet<SearchResponse>(buildUrl(opts, creds))
+    const request = dependencies.apiGet ?? apiGet
+    const data = await request<SearchResponse>(buildUrl(opts, creds))
     const rows = (data.results ?? []).map(toResult)
 
     if (opts.format === "table") {

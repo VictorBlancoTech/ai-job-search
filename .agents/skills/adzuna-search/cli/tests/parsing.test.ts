@@ -126,6 +126,10 @@ describe("stripHtml", () => {
     );
   });
 
+  test("decodes common copyright, bullet, and trademark entities", () => {
+    expect(stripHtml("&copy; &bull; &trade;")).toBe("© • ™");
+  });
+
   test("decodes numeric entities", () => {
     expect(stripHtml("l&#39;azienda")).toBe("l'azienda");
   });

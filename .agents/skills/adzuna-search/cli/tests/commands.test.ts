@@ -29,12 +29,11 @@ describe("apiGet", () => {
       sleepFn: async (ms) => {
         delays.push(ms);
       },
-      retryDelayMs: 0,
     });
 
     expect(result).toEqual(payload);
     expect(calls).toBe(2);
-    expect(delays).toEqual([0]);
+    expect(delays).toEqual([2000]);
   });
 
   test("returns a clear error after the final 5xx", async () => {
@@ -107,5 +106,26 @@ describe("credentials", () => {
       },
     ]);
     expect(getCredentials(repoRoot, {})).toBeNull();
+  });
+});
+
+describe("runSearch failure handling", () => {
+  test("returns 1 and writes SEARCH_FAILED when the API rejects", async () => {
+    let stderr = "";
+    const exitCode = await runSearch(
+      { country: "it", page: 1, limit: 1, format: "json" },
+      {
+        environment: { ADZUNA_APP_ID: "test-id", ADZUNA_APP_KEY: "test-key" },
+        apiGet: async () => {
+          throw new Error("upstream unavailable");
+        },
+        writeError: (error, code) => {
+          stderr += JSON.stringify({ error, code }) + "\n";
+        },
+      },
+    );
+
+    expect(exitCode).toBe(1);
+    expect(JSON.parse(stderr)).toEqual({ error: "upstream unavailable", code: "SEARCH_FAILED" });
   });
 });

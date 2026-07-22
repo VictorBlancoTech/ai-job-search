@@ -107,7 +107,8 @@ Notas del contrato:
 - `id` es el id estable del portal (string); `url` es el `redirect_url` de
   Adzuna (página de la oferta en adzuna.it / adzuna.es).
 - `date` es `created` recortado a `YYYY-MM-DD`; `null` si la API no lo trae.
-- `description` viene con el HTML strippeado (tags fuera, entities decodificadas).
+- `description` viene con el HTML strippeado (tags fuera, entidades HTML comunes
+  con nombre y entidades numéricas decodificadas).
 - `salary` es `"min-max EUR"` solo cuando la API trae **ambos** límites; si no,
   `null`. En IT/ES muchas ofertas no publican salario.
 - `remote` es siempre `null`: la API de búsqueda de Adzuna no expone campo de

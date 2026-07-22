@@ -191,6 +191,10 @@ export function toResult(j: AdzunaJob): JobResult {
 const NAMED_ENTITIES: Record<string, string> = {
   amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
   euro: "€", ndash: "–", mdash: "—",
+  copy: "©", bull: "•", trade: "™", middot: "·",
+  rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“",
+  cent: "¢", pound: "£", yen: "¥", sect: "§", para: "¶",
+  plusmn: "±", times: "×", divide: "÷",
   agrave: "à", egrave: "è", igrave: "ì", ograve: "ò", ugrave: "ù",
   aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú",
   Agrave: "À", Egrave: "È", Igrave: "Ì", Ograve: "Ò", Ugrave: "Ù",
@@ -299,6 +303,7 @@ export interface Flags {
 const ALIAS: Record<string, string> = { q: "query", l: "where", n: "limit" }
 const OPTION_NAMES = new Set(["query", "where", "country", "page", "limit", "format", "help", "h"])
 const BOOLEAN_OPTIONS = new Set(["help", "h"])
+const NUMERIC_OPTIONS = new Set(["page", "limit"])
 
 /** Parse the CLI flags and reject unknown options or missing values. */
 export function parseArgs(argv: string[]): Flags {
@@ -320,7 +325,8 @@ export function parseArgs(argv: string[]): Flags {
     }
 
     const next = argv[i + 1]
-    if (next === undefined || next.startsWith("-")) {
+    const negativeNumericValue = NUMERIC_OPTIONS.has(key) && next !== undefined && /^-\d+$/.test(next)
+    if (next === undefined || (next.startsWith("-") && !negativeNumericValue)) {
       throw new InvalidArgumentError(`${a} requires a value`)
     }
     flags[key] = next

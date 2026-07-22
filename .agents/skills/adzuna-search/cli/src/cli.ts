@@ -44,12 +44,15 @@ function stringFlag(flags: Flags, name: string): string | undefined {
 }
 
 function integerFlag(name: string, raw: string | undefined, min: number, max?: number): number {
+  const range = max === undefined ? `>= ${min}` : `${min}..${max}`
   if (raw === undefined || !/^\d+$/.test(raw)) {
+    if (raw !== undefined && /^-\d+$/.test(raw)) {
+      throw new InvalidArgumentError(`--${name} must be in the range ${range}, got "${raw}"`)
+    }
     throw new InvalidArgumentError(`--${name} must be a non-negative integer, got "${raw ?? ""}"`)
   }
   const value = Number(raw)
   if (!Number.isSafeInteger(value) || value < min || (max !== undefined && value > max)) {
-    const range = max === undefined ? `>= ${min}` : `${min}..${max}`
     throw new InvalidArgumentError(`--${name} must be in the range ${range}, got "${raw}"`)
   }
   return value
