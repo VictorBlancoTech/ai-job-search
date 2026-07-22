@@ -25,6 +25,8 @@ REQUIRED_IGNORE_RULES = [
     # Depth-independent: the job-scraper skill resolves `job_scraper/` relative
     # to its own directory, so a repo-rooted rule would silently fail to match.
     "**/job_scraper/seen_jobs.json",
+    "job_scraper/runs/",
+    "job_scraper/latest.json",
     "cv/victor_*.tex",
     # Tailored per-application variants created by /apply (section subfolders).
     "cv/victor_*/**",
