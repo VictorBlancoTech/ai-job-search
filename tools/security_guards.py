@@ -29,6 +29,7 @@ REQUIRED_IGNORE_RULES = [
     "job_scraper/runs/",
     "job_scraper/latest.json",
     "job_scraper/rank_runs/",
+    "job_scraper/rank_runs/*",
     "job_scraper/latest-rank.json",
     "cv/victor_*.tex",
     # Tailored per-application variants created by /apply (section subfolders).
@@ -57,6 +58,8 @@ REQUIRED_IGNORE_RULES = [
 # Negation (re-include) rules legitimately shipped.
 ALLOWED_IGNORE_NEGATIONS = {
     "!cv/plantilla/",
+    "!job_scraper/rank_runs/",
+    "!job_scraper/rank_runs/.gitkeep",
     "!documents/**/.gitkeep",
     "!tracker/.gitkeep",
     "!tracker/borradores/.gitkeep",

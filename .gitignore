@@ -28,6 +28,9 @@ job_scraper/runs/
 job_scraper/latest.json
 # Ranking results contain local job data and descriptions; never commit them.
 job_scraper/rank_runs/
+!job_scraper/rank_runs/
+job_scraper/rank_runs/*
+!job_scraper/rank_runs/.gitkeep
 job_scraper/latest-rank.json
 cv/victor_*.tex
 cv/victor_*/**
