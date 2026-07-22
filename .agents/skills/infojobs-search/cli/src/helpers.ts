@@ -242,14 +242,22 @@ function normalizedText(value: string): string {
 }
 
 /** Convert a friendly province name into the API's documented key format. */
+const PROVINCE_KEY_ALIASES: Record<string, string> = {
+  alava: "alava",
+  madrid: "madrid",
+  valencia: "valencia-valencia",
+  "valencia-valencia": "valencia-valencia",
+}
+
 export function normalizeProvince(value: string): string {
-  return value
+  const slug = value
     .normalize("NFKD")
     .replace(/\p{M}+/gu, "")
     .toLowerCase()
     .replace(/[’']/gu, "")
     .replace(/[^a-z0-9]+/gu, "-")
     .replace(/^-+|-+$/gu, "")
+  return PROVINCE_KEY_ALIASES[slug] ?? slug
 }
 
 function locationText(offer: InfoJobsOffer): string | null {

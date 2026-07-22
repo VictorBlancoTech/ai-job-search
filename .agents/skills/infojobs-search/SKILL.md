@@ -92,8 +92,9 @@ bun run .agents/skills/infojobs-search/cli/src/cli.ts detail <offer-id> --format
 - `--where <location>` / `-l` is optional and maps to API `province`. Friendly
   province names and documented keys are accepted: the CLI lowercases,
   removes diacritics, and converts separators/spaces to hyphens (`Madrid` ->
-  `madrid`, `Álava` -> `alava`). It is still a province filter; the CLI does
-  not guess country or city dictionary IDs.
+  `madrid`, `Álava` -> `alava`, `Valencia` -> `valencia-valencia`). The
+  Valencia alias reflects the official dictionary key. It is still a province
+  filter; the CLI does not guess country or city dictionary IDs.
 - `--teleworking` is a boolean server-side filter for offers marked
   `solo-teletrabajo`.
 - `--page <n>` is a 1-indexed integer, `>= 1`; default `1`.

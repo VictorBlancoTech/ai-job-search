@@ -197,13 +197,13 @@ Parser RSS mínimo sin deps (regex/scan de `<item>`…`</item>`, extraer title/l
 
 - [ ] **Step 1: Explorar API + fixture**
 
-Auth: `Authorization: Basic base64(client_id:client_secret)` + header `User-Agent`. Búsqueda: `GET https://api.infojobs.net/api/1/offer?q=<kw>&province=<nombre>&teleworking=1&page=1&maxResults=25`. Si hay credenciales: probar en vivo y guardar fixture (con datos anonimizados si hiciera falta). Si no: construir fixture desde la doc pública (developer.infojobs.net → API offer: `offers[].{id, title, author:{name}, province:{value}, city, link, updated, teleworking:{value}, salaryMin/salaryMax:{value}, requirementMin}`).
+Auth: `Authorization: Basic base64(client_id:client_secret)` + header `User-Agent`. Implementación verificada: búsqueda `GET https://api.infojobs.net/api/9/offer?q=<kw>&province=<province-key>&teleworking=solo-teletrabajo&page=1&maxResults=25`; la provincia se normaliza a la clave oficial (por ejemplo, `Valencia` → `valencia-valencia`). El detalle usa `GET https://api.infojobs.net/api/7/offer/{id}`. Si hay credenciales: probar en vivo y guardar fixture (con datos anonimizados si hiciera falta). Si no: construir fixture desde la doc pública (developer.infojobs.net → API offer: `offers[].{id, title, author:{name}, province:{value}, city, link, updated, teleworking:{value}, salaryMin/salaryMax:{value}, requirementMin}`).
 
 - [ ] **Step 2-3: TDD + implementar**
 
-Mapeo: id, title, company→author.name, location→city || province.value, url→link, date→updated, description→requirementMin (la búsqueda devuelve resumen; si la oferta necesita texto completo, `detail` comando: `GET /api/1/offer/{id}` → description). Implementar AMBOS comandos: `search` y `detail <id>`. remote→teleworking.value contiene "remoto/teletrabajo" → true. salary→salaryMin/Max si existen.
+Mapeo: id, title, company→author.name, location→city || province.value, url→link, date→updated, description→requirementMin (la búsqueda devuelve resumen; si la oferta necesita texto completo, `detail` usa `GET /api/7/offer/{id}` → description). Implementar AMBOS comandos: `search` y `detail <id>`. `--teleworking` es el filtro server-side v9 `teleworking=solo-teletrabajo`; remote→teleworking.value contiene "remoto/teletrabajo" → true. salary→salaryMin/Max si existen; el detalle v7 usa `minPay`/`maxPay`.
 
-- [ ] **Step 4-6: Smoke (si credenciales), SKILL.md, commit** — `feat: skill infojobs-search (API oficial ES, OAuth Basic)`
+- [ ] **Step 4-6: Smoke (si credenciales), SKILL.md, commit** — `feat: skill infojobs-search (API oficial ES, Basic auth)`
 
 ---
 

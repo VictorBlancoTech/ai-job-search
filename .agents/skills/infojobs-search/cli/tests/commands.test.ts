@@ -76,6 +76,8 @@ describe("InfoJobs URLs and authentication", () => {
     expect(parsed.searchParams.get("maxResults")).toBe("3")
     const diacriticProvince = new URL(buildSearchUrl(searchOpts({ where: "Álava" })))
     expect(diacriticProvince.searchParams.get("province")).toBe("alava")
+    const valenciaProvince = new URL(buildSearchUrl(searchOpts({ where: "Valencia" })))
+    expect(valenciaProvince.searchParams.get("province")).toBe("valencia-valencia")
     expect(buildDetailUrl("id/con espacios")).toBe(`${INFOJOBS_DETAIL_ENDPOINT}/id%2Fcon%20espacios`)
     expect(INFOJOBS_SEARCH_ENDPOINT).toBe(`${INFOJOBS_API_BASE}/9/offer`)
     expect(INFOJOBS_DETAIL_ENDPOINT).toBe(`${INFOJOBS_API_BASE}/7/offer`)

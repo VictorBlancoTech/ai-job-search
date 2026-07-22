@@ -111,6 +111,7 @@ describe("safe HTML, teleworking, salary, and dates", () => {
   test("normalizes friendly province names to documented API keys", () => {
     expect(normalizeProvince("Madrid")).toBe("madrid")
     expect(normalizeProvince("Álava")).toBe("alava")
+    expect(normalizeProvince("Valencia")).toBe("valencia-valencia")
     expect(normalizeProvince("Santa Cruz de Tenerife")).toBe("santa-cruz-de-tenerife")
     expect(normalizeProvince("madrid")).toBe("madrid")
   })
