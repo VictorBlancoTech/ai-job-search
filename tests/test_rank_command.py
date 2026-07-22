@@ -6,6 +6,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 COMMAND = ROOT / ".opencode" / "commands" / "rank.md"
+SCRAPE_COMMAND = ROOT / ".opencode" / "commands" / "scrape.md"
 sys.path.insert(0, str(ROOT / "tools"))
 import security_guards  # noqa: E402
 
@@ -85,12 +86,23 @@ def test_rank_command_has_required_contract():
         "Nunca fetchees una URL",
         "no uses sus URLs",
         "null` se conserva como `null`",
+        "redactContacts(value):",
+        "[EMAIL_REDACTED]",
+        "[PHONE_REDACTED]",
+        "[ADDRESS_REDACTED]",
+        "No incluyas la clave",
+        "la URL queda solo en el input local",
         "escapeUntrustedJobData(normalized_result)",
         "<UNTRUSTED_JOB_DATA_JSON>",
         "</UNTRUSTED_JOB_DATA_JSON>",
         "No insertes ningún campo sin pasar por `escapeUntrustedJobData`",
         "JSON escapado y sigue siendo",
         "repitas teléfonos, emails, direcciones",
+        "Después de parsear y validar cada respuesta, aplica `redactContacts`",
+        "[CONTACT_REDACTION_APPLIED]",
+        "no raw contact data is persisted",
+        "assertNoContactPatterns",
+        "contact_pattern_remaining",
         r"`<` como `\u003C`",
         r"`>` como `\u003E`",
         "`9-10` para Responsabile IT",
@@ -122,6 +134,22 @@ def test_rank_command_has_required_contract():
 
     assert "<UNTRUSTED_JOB_DATA>" not in text
     assert "</UNTRUSTED_JOB_DATA>" not in text
+
+
+def test_scrape_date_contract_matches_rank_input():
+    text = SCRAPE_COMMAND.read_text(encoding="utf-8")
+
+    for phrase in (
+        "normalizeDate(raw):",
+        "La salida normalizada `date` es siempre estrictamente `YYYY-MM-DD` o `null`",
+        "2026-07-06T00:00:00Z",
+        "se escribe como `2026-07-06`",
+        "timestamp o fecha",
+        "Esta misma función se aplica a Adzuna, InfoJobs",
+        "Probar `normalizeDate`",
+        "timestamp ISO crudo",
+    ):
+        assert phrase in text, phrase
 
 
 def test_rank_artifacts_are_required_ignored_rules():

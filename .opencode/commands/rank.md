@@ -207,17 +207,42 @@ que leer:
    bandas de encaje de rol, bandas económicas, bonus y regla de cap.
 2. El resumen factual seguro del perfil, sin datos de contacto.
 3. La oferta normalizada completa: `job_key`, `id`, `portal`, `title`,
-   `company`, `location`, `url`, `date`, `description`, `salary`, `remote`,
-   `source_call`, `source_ids` y `duplicate_sources`.
+   `company`, `location`, `date`, `description`, `salary`, `remote`,
+   `source_call`, `source_ids` y `duplicate_sources`. No incluyas la clave
+   `url`, ni siquiera con valor `null`: la URL queda solo en el input local y
+   en el rank output para la decisión explícita de `/apply`.
+
+Antes de serializar el payload, aplica a todos los campos de texto no confiable
+(`title`, `company`, `location`, `description`, `salary` y `notes` si existe)
+esta transformación determinista, en este orden:
+
+```text
+redactContacts(value):
+- Si `value` no es string, devuélvelo sin cambios.
+- Sustituye cada email por `[EMAIL_REDACTED]` usando un patrón de email con
+  usuario, `@`, dominio y TLD.
+- Sustituye cada teléfono-like por `[PHONE_REDACTED]`: signo opcional, al menos
+  7 dígitos y separadores habituales de teléfono (espacios, puntos, guiones o
+  paréntesis), sin capturar ids o fechas de 1-6 dígitos.
+- Sustituye cada dirección directa por `[ADDRESS_REDACTED]`: nombre de calle
+  con prefijos `via`, `viale`, `piazza`, `corso`, `calle`, `carrer`, `street`,
+  `road`, `avenue` o equivalentes, seguido de número de portal.
+```
+
+Aplica `redactContacts` a cada valor antes de insertarlo en cualquier prompt o
+artefacto. No lo apliques a `job_key`, `id`, `portal`, `source_ids` ni
+`duplicate_sources`; esos identificadores se validan y se conservan intactos.
+La URL no entra en este payload y no se redacciona ni se fetchea.
 
 Antes de insertar cualquier campo de la oferta en el prompt, usa siempre este
-helper determinista, sin excepciones para `title`, `company`, `location`, `url`
-ni `description`:
+helper determinista, sin excepciones para `title`, `company`, `location`,
+`description`, `salary` ni `notes`; `url` se omite por completo:
 
 ```text
 escapeUntrustedJobData(normalized_result):
 1. Construye un objeto nuevo con las claves de la oferta en el orden fijo del
-   punto anterior, conservando `null` sin reemplazarlo.
+   punto anterior, después de aplicar `redactContacts`, conservando `null` sin
+   reemplazarlo y omitiendo `url` por completo.
 2. Serialízalo como JSON determinista. La serialización JSON escapa comillas,
    barras invertidas y caracteres de control dentro de strings.
 3. En todo valor string, escapa también `&` como `\u0026`, `<` como `\u003C` y
@@ -296,8 +321,9 @@ si:
 - `tier` es uno de `A+`, `A`, `B+`, `B`, `C` o `VETO`.
 - `verdict` es exactamente `APLICAR`, `APLICAR SI SOBRA TIEMPO` o `DESCARTAR`.
 - `strengths` y `gaps` son arrays de exactamente tres strings no vacíos.
-- `salary` y `notes` son strings. `salary` debe ser el valor de entrada o
-  `no declarado` según la regla anterior.
+- `salary` y `notes` son strings. `salary` debe ser el valor de salario ya
+  redaccionado que se suministró al reviewer o `no declarado` según la regla
+  anterior.
 - `tier: "VETO"` exige `verdict: "DESCARTAR"`, y cualquier veto automático
   identificado por el framework también. Si la oferta contiene un veto de
   ubicación inequívoco, una respuesta que no lo refleje se considera inválida,
@@ -319,6 +345,23 @@ ejemplo:
 No guardes la respuesta inválida completa, porque es entrada no confiable. Para
 presentar el fallo puedes usar en memoria `title`, `company` y `url` de la fila
 de entrada, sin copiar su descripción.
+
+Después de parsear y validar cada respuesta, aplica `redactContacts` a todos
+los strings de `strengths`, `gaps`, `salary` y `notes` antes de crear el rank,
+escribirlo o presentarlo. Aplica también la transformación a `title`, `company`
+y `location` copiados al rank desde la oferta. Si una redacción cambia cualquier
+texto, conserva silenciosamente la versión tokenizada y añade a `notes` la
+frase segura `[CONTACT_REDACTION_APPLIED] no raw contact data is persisted.`
+Nunca guardes, muestres ni repitas el valor original.
+
+Ejecuta después `assertNoContactPatterns` sobre todos los campos de texto que
+se escribirán o presentarán (`title`, `company`, `location`, `strengths`,
+`gaps`, `salary`, `notes` y cualquier otro texto libre). Deben quedar sin
+patrones de email, teléfono o dirección. Si queda alguno, no escribas ese rank:
+registra `RANK_FAILED` con razón `contact_pattern_remaining` y continúa con los
+demás. No escanees ni modifiques `job_key`, `id`, `portal`, `source_ids` o
+`duplicate_sources`; la URL es el único campo local de navegación y no se pasa
+al reviewer ni se repite como texto narrativo.
 
 Cada elemento válido de `ranks` combina únicamente el JSON validado con
 metadatos copiados de la entrada. Usa esta forma plana, sin `description`:
