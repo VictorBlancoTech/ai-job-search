@@ -69,6 +69,31 @@ oferta a un agente, usa sus funciones `validate_latest_payload`,
 `normalize_strict_date`, `is_safe_identifier` e `is_safe_apply_url`; no
 reimplemente estas reglas solo en el prompt.
 
+La invocación es ejecutable, no una comprobación textual. Desde la raíz del
+workspace, importa el módulo y usa el resultado como gate antes de seleccionar:
+
+```python
+from tools.rank_safety import (
+    is_safe_apply_url,
+    is_safe_identifier,
+    normalize_strict_date,
+    validate_latest_payload,
+)
+
+errors = validate_latest_payload(latest_payload)
+if errors:
+    # Registra solo RANK_INPUT_INVALID y los nombres de campo, nunca valores.
+    detener_sin_escribir_rank(errors)
+for row in latest_payload["results"]:
+    assert normalize_strict_date(row["date"]) == row["date"] if row["date"] else True
+    assert all(is_safe_identifier(row[field]) for field in ("id", "portal", "source_call"))
+    assert is_safe_apply_url(row["url"]) if row["url"] else True
+```
+
+No sustituyas esas llamadas por regex o validaciones escritas en el prompt; los
+`assert` anteriores son una comprobación adicional y no permiten continuar si
+el gate devuelve errores.
+
 Valida antes de seleccionar candidatos:
 
 - La raíz debe ser un objeto que contenga las claves de contrato obligatorias
@@ -84,7 +109,8 @@ Valida antes de seleccionar candidatos:
 - Cada elemento de `results` debe ser un objeto normalizado con todos estos
   campos y tipos, sin omitir ninguno:
   - `id` debe ser una cadena no vacía que cumpla `is_safe_identifier`:
-    únicamente ASCII letters/digits y `._:-`.
+    únicamente ASCII letters/digits y `._:-`, con al menos un carácter
+    alfanumérico.
   - `portal` debe ser una cadena no vacía que cumpla `is_safe_identifier`.
   - `title` debe ser una cadena no vacía.
   - `company` debe ser una cadena o `null`.
@@ -248,11 +274,14 @@ redactContacts(value):
 - Sustituye cada email por `[EMAIL_REDACTED]` usando un patrón de email con
   usuario, `@`, dominio y TLD.
 - Sustituye cada teléfono-like por `[PHONE_REDACTED]`: signo opcional, al menos
-  7 dígitos y separadores habituales de teléfono (espacios, puntos, guiones o
-  paréntesis), sin capturar ids o fechas de 1-6 dígitos.
+  7 dígitos y separadores habituales de teléfono (espacios, puntos, guiones,
+  barras o paréntesis), sin capturar ids o fechas de 1-6 dígitos.
 - Sustituye cada dirección directa por `[ADDRESS_REDACTED]`: nombre de calle
   con prefijos `via`, `viale`, `piazza`, `corso`, `calle`, `carrer`, `street`,
-  `road`, `avenue` o equivalentes, seguido de número de portal.
+  `road`, `avenue` o equivalentes, seguido de número de portal, o la forma
+  inversa número + nombre de calle (`12 Main Street`).
+- Examina también variantes con percent-encoding o entidades HTML antes de
+  decidir que no queda un contacto.
 ```
 
 Aplica `redactContacts` a cada valor antes de insertarlo en cualquier prompt o
@@ -375,17 +404,41 @@ No guardes la respuesta inválida completa, porque es entrada no confiable. Para
 presentar el fallo puedes usar en memoria `title`, `company` y `url` de la fila
 de entrada, sin copiar su descripción.
 
-Después de parsear cada respuesta, usa `tools.rank_safety.sanitize_reviewer_output`:
-valida la estructura exacta y aplica `redact_contacts` a todos los strings de
-`strengths`, `gaps`, `salary` y `notes` antes de crear el rank, escribirlo o
-presentarlo. Aplica también la transformación a `title`, `company` y `location`
-copiados al rank desde la oferta. Si una redacción cambia cualquier texto,
+Después de parsear cada respuesta, usa el helper ejecutable, no una copia del prompt:
+
+```python
+from tools.rank_safety import (
+    contains_contact_pattern,
+    redact_contacts,
+    sanitize_reviewer_output,
+)
+
+try:
+    sanitized_reviewer = sanitize_reviewer_output(
+        reviewer_payload, expected_job_key=job_key
+    )
+except ValueError:
+    registrar_rank_failed(job_key, "invalid_reviewer_output")
+else:
+    safe_metadata = {
+        field: redact_contacts(result[field])
+        for field in ("title", "company", "location")
+    }
+    if any(contains_contact_pattern(value) for value in safe_metadata.values() if value):
+        registrar_rank_failed(job_key, "contact_pattern_remaining")
+    else:
+        crear_rank_solo_con(sanitized_reviewer, safe_metadata)
+```
+
+`sanitize_reviewer_output` valida la estructura exacta y aplica `redact_contacts` a todos
+los strings de `strengths`, `gaps`, `salary` y `notes` antes de crear el
+rank, escribirlo o presentarlo. Si una redacción cambia cualquier texto,
 conserva silenciosamente la versión tokenizada y añade a `notes` la frase segura
 `[CONTACT_REDACTION_APPLIED] no raw contact data is persisted.` Nunca guardes,
-muestres ni repitas el valor original. Si `sanitize_reviewer_output` rechaza la
-estructura, registra `RANK_FAILED` y continúa.
+muestres ni repitas el valor original. Si el helper rechaza la estructura,
+registra `RANK_FAILED` y continúa.
 
-Ejecuta después `assertNoContactPatterns` sobre todos los campos de texto que
+Ejecuta después `contains_contact_pattern` sobre todos los campos de texto que
 se escribirán o presentarán (`title`, `company`, `location`, `strengths`,
 `gaps`, `salary`, `notes` y cualquier otro texto libre). Deben quedar sin
 patrones de email, teléfono o dirección. Si queda alguno, no escribas ese rank:

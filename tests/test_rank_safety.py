@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from tools.rank_safety import (
+    contains_contact_pattern,
     is_safe_apply_url,
     is_safe_identifier,
     normalize_strict_date,
@@ -63,13 +64,22 @@ def test_strict_date_rejects_impossible_calendar_days():
     assert normalize_strict_date("2026-02-31") is None
     assert normalize_strict_date("2026-02-31T00:00:00Z") is None
     assert normalize_strict_date("2026-02-28") == "2026-02-28"
+    assert normalize_strict_date("2024-02-29") == "2024-02-29"
+    assert normalize_strict_date("2023-02-29") is None
+    assert normalize_strict_date("2026-07-06X00:00:00") is None
 
     payload = valid_latest_payload()
     payload["results"][0]["date"] = "2026-02-31"
     assert any("date" in error for error in validate_latest_payload(payload))
 
+    payload = valid_latest_payload()
+    payload["generated_at"] = "2026-02-31T00:00:00Z"
+    assert any("generated_at" in error for error in validate_latest_payload(payload))
 
-@pytest.mark.parametrize("value", ["job@1", "job 1", "<script>", "tel:+39324"])
+
+@pytest.mark.parametrize(
+    "value", ["job@1", "job 1", "<script>", "tel:+39324", ".", "..", ":", "---"]
+)
 def test_safe_identifier_rejects_markup_contact_and_whitespace(value):
     assert not is_safe_identifier(value)
 
@@ -90,6 +100,16 @@ def test_latest_rejects_malicious_identifiers_and_source_values():
     assert validate_latest_payload(payload)
 
 
+def test_latest_rejects_duplicate_derived_job_keys():
+    payload = valid_latest_payload()
+    payload["results"].append(copy.deepcopy(payload["results"][0]))
+    payload["counts"]["results"] = 2
+
+    errors = validate_latest_payload(payload)
+
+    assert any("duplicate job key" in error for error in errors)
+
+
 @pytest.mark.parametrize(
     "url",
     [
@@ -100,6 +120,14 @@ def test_latest_rejects_malicious_identifiers_and_source_values():
         "https://example.com/contact/apply@example.com",
         "https://example.com/jobs/1234567",
         "https://example.com/Via%20Roma%2012",
+        "https://example.com/jobs/jane%2540example.com",
+        "https://example.com/jobs/%252B39%2520324%2520986%25208002",
+        "https://example.com/jobs/%252B39%252F324%252F986%252F8002",
+        "https://example.com/jobs/Via%2520Roma%252012",
+        "https://example.com/jobs/%0A",
+        "https://user:password@example.com/jobs/123",
+        "https://example..com/jobs/123",
+        "https://example.com:99999/jobs/123",
     ],
 )
 def test_apply_url_rejects_non_http_contact_and_phone_urls(url):
@@ -190,6 +218,7 @@ def test_reviewer_output_is_redacted_before_persistence():
     assert "[PHONE_REDACTED]" in text
     assert "[ADDRESS_REDACTED]" in text
     assert "[CONTACT_REDACTION_APPLIED]" in sanitized["notes"]
+    assert not contains_contact_pattern(text)
 
 
 def test_reviewer_output_rejects_unsafe_structure_and_veto_mismatch():
@@ -203,10 +232,42 @@ def test_reviewer_output_rejects_unsafe_structure_and_veto_mismatch():
     with pytest.raises(ValueError):
         sanitize_reviewer_output(invalid_id)
 
+    wrong_candidate = reviewer_output()
+    wrong_candidate["job_key"] = "freehire:other-job"
+    with pytest.raises(ValueError):
+        sanitize_reviewer_output(wrong_candidate, expected_job_key="freehire:job-1")
+
     invalid_veto = reviewer_output()
     invalid_veto.update(tier="VETO", verdict="APLICAR")
     with pytest.raises(ValueError):
         sanitize_reviewer_output(invalid_veto)
+
+
+@pytest.mark.parametrize(
+    "score", [8, 8.04, float("nan"), float("inf"), "8.4"]
+)
+def test_reviewer_output_rejects_non_contract_scores(score):
+    invalid = reviewer_output()
+    invalid["score"] = score
+
+    with pytest.raises(ValueError):
+        sanitize_reviewer_output(invalid)
+
+
+def test_reviewer_output_rejects_huge_integer_without_float_overflow():
+    invalid = reviewer_output()
+    invalid["score"] = 10**1000
+
+    with pytest.raises(ValueError):
+        sanitize_reviewer_output(invalid)
+
+
+def test_reviewer_output_rejects_blank_strengths_and_gaps():
+    invalid = reviewer_output()
+    invalid["strengths"][0] = " \t"
+
+    with pytest.raises(ValueError):
+        sanitize_reviewer_output(invalid)
 
 
 def test_redact_contacts_uses_stable_tokens():
@@ -216,3 +277,22 @@ def test_redact_contacts_uses_stable_tokens():
         "Email [EMAIL_REDACTED], phone [PHONE_REDACTED], "
         "address [ADDRESS_REDACTED]."
     )
+
+
+@pytest.mark.parametrize(
+    "text, token",
+    [
+        ("jane%40example%2Ecom", "[EMAIL_REDACTED]"),
+        ("jane%2540example%252Ecom", "[EMAIL_REDACTED]"),
+        ("Call %2B39%20324%20986%208002", "[PHONE_REDACTED]"),
+        ("Call %252B39%2520324%2520986%25208002", "[PHONE_REDACTED]"),
+        ("Call +39/324/986/8002", "[PHONE_REDACTED]"),
+        ("Via%2520Roma%252012", "[ADDRESS_REDACTED]"),
+    ],
+)
+def test_redact_contacts_handles_encoded_contact_variants(text, token):
+    redacted = redact_contacts(text)
+
+    assert token in redacted
+    assert not any(raw in redacted for raw in ("jane", "+39", "Via Roma"))
+    assert not contains_contact_pattern(redacted)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Pure-stdlib safety rules shared by the /rank command and its tests."""
 
+import html
 import ipaddress
 import math
 import re
@@ -14,7 +15,7 @@ _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _EMAIL_RE = re.compile(
     r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b"
 )
-_PHONE_RE = re.compile(r"(?<![\w])(?:\(?\+?\d[\d\s().-]{5,}\d)(?![\w])")
+_PHONE_RE = re.compile(r"(?<![\w])(?:\(?\+?\d[\d\s()./-]{5,}\d)(?![\w])")
 _STREET_PREFIX_RE = re.compile(
     r"(?i)\b(?:via|viale|piazza|corso|calle|carrer|street|st\.?|road|rd\.?|"
     r"avenue|ave\.?|boulevard|blvd\.?)\s+"
@@ -24,6 +25,11 @@ _STREET_SUFFIX_RE = re.compile(
     r"(?i)\b\d{1,5}\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'’-]*(?:\s+"
     r"[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'’-]*){0,4}\s+"
     r"(?:street|st\.?|road|rd\.?|avenue|ave\.?|boulevard|blvd\.?)\b"
+)
+_STREET_NUMBER_PREFIX_RE = re.compile(
+    r"(?i)\b\d{1,5}[A-Za-z]?\s+"
+    r"(?:via|viale|piazza|corso|calle|carrer|street|st\.?|road|rd\.?|"
+    r"avenue|ave\.?|boulevard|blvd\.?)\b"
 )
 _SECRET_RE = re.compile(
     r"(?i)(?:authorization|\bbasic\s+[A-Za-z0-9+/=]{8,}|"
@@ -86,11 +92,14 @@ _COUNT_KEYS = {
     "failures",
     "skipped",
 }
+_CONTACT_DECODE_ROUNDS = 8
 
 
 def normalize_strict_date(value: Any) -> Optional[str]:
     """Return a real calendar date as YYYY-MM-DD, or None."""
     if not isinstance(value, str) or not value:
+        return None
+    if any(char.isspace() or ord(char) < 32 for char in value):
         return None
 
     if _DATE_RE.fullmatch(value):
@@ -99,10 +108,11 @@ def normalize_strict_date(value: Any) -> Optional[str]:
         except ValueError:
             return None
 
-    if "T" not in value:
+    if len(value) < 11 or value[10] != "T":
         return None
+    timestamp = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(timestamp)
     except ValueError:
         return None
     return parsed.date().isoformat()
@@ -115,28 +125,67 @@ def _phone_replacement(match: re.Match) -> str:
     return "[PHONE_REDACTED]" if sum(char.isdigit() for char in candidate) >= 7 else candidate
 
 
-def redact_contacts(text: str) -> str:
-    """Redact contact-like text using stable, deterministic tokens."""
-    if not isinstance(text, str):
-        return text
+def _redact_plain_contacts(text: str) -> str:
     redacted = _EMAIL_RE.sub("[EMAIL_REDACTED]", text)
     redacted = _PHONE_RE.sub(_phone_replacement, redacted)
     redacted = _STREET_PREFIX_RE.sub("[ADDRESS_REDACTED]", redacted)
-    return _STREET_SUFFIX_RE.sub("[ADDRESS_REDACTED]", redacted)
+    redacted = _STREET_SUFFIX_RE.sub("[ADDRESS_REDACTED]", redacted)
+    return _STREET_NUMBER_PREFIX_RE.sub("[ADDRESS_REDACTED]", redacted)
 
 
-def is_safe_identifier(value: Any) -> bool:
-    """Return whether value is a non-empty ASCII identifier safe to persist."""
-    return isinstance(value, str) and bool(_IDENTIFIER_RE.fullmatch(value))
+def _contact_variants(text: str) -> List[str]:
+    """Return bounded percent/HTML-decoded variants for contact detection."""
+    variants = [text]
+    current = text
+    for _ in range(_CONTACT_DECODE_ROUNDS):
+        decoded = html.unescape(unquote(current))
+        if decoded == current or decoded in variants:
+            break
+        variants.append(decoded)
+        current = decoded
+    return variants
 
 
-def _contains_contact_pattern(value: str) -> bool:
-    if _EMAIL_RE.search(value) or _STREET_PREFIX_RE.search(value) or _STREET_SUFFIX_RE.search(value):
+def _contains_plain_contact_pattern(value: str) -> bool:
+    if _EMAIL_RE.search(value) or _STREET_PREFIX_RE.search(value):
+        return True
+    if _STREET_SUFFIX_RE.search(value) or _STREET_NUMBER_PREFIX_RE.search(value):
         return True
     return any(
         _phone_replacement(match) == "[PHONE_REDACTED]"
         for match in _PHONE_RE.finditer(value)
     )
+
+
+def redact_contacts(text: Any) -> Any:
+    """Redact contact-like text using stable, deterministic tokens."""
+    if not isinstance(text, str):
+        return text
+    for variant in reversed(_contact_variants(text)):
+        if _contains_plain_contact_pattern(variant):
+            return _redact_plain_contacts(variant)
+    return text
+
+
+def is_safe_identifier(value: Any) -> bool:
+    """Return whether value is a non-empty ASCII identifier safe to persist."""
+    return (
+        isinstance(value, str)
+        and bool(_IDENTIFIER_RE.fullmatch(value))
+        and any(char.isascii() and char.isalnum() for char in value)
+    )
+
+
+def _contains_contact_pattern(value: str) -> bool:
+    return any(
+        _contains_plain_contact_pattern(variant)
+        for variant in _contact_variants(value)
+    )
+
+
+def contains_contact_pattern(value: Any) -> bool:
+    """Return whether a string still contains a detectable contact pattern."""
+    return isinstance(value, str) and _contains_contact_pattern(value)
 
 
 def _valid_host(host: Optional[str]) -> bool:
@@ -152,14 +201,18 @@ def _valid_host(host: Optional[str]) -> bool:
         ascii_host = host.encode("idna").decode("ascii")
     except UnicodeError:
         return False
-    labels = ascii_host.rstrip(".").split(".")
+    if len(ascii_host) > 253 or ascii_host.endswith(".."):
+        return False
+    if ascii_host.endswith("."):
+        ascii_host = ascii_host[:-1]
+    labels = ascii_host.split(".")
     return bool(labels) and all(_SAFE_HOST_LABEL_RE.fullmatch(label) for label in labels)
 
 
 def is_safe_apply_url(value: Any) -> bool:
     """Accept only contact-free HTTP(S) URLs with a valid host."""
     if not isinstance(value, str) or not value or any(
-        ord(char) < 32 or char.isspace() for char in value
+        ord(char) < 32 or ord(char) == 127 or char.isspace() for char in value
     ):
         return False
     try:
@@ -173,7 +226,14 @@ def is_safe_apply_url(value: Any) -> bool:
         _ = parts.port
     except ValueError:
         return False
-    return not _contains_contact_pattern(unquote(value))
+    variants = _contact_variants(value)
+    if any(
+        ord(char) < 32 or ord(char) == 127
+        for variant in variants
+        for char in variant
+    ):
+        return False
+    return not any(_contains_plain_contact_pattern(variant) for variant in variants)
 
 
 def _non_empty_string(value: Any) -> bool:
@@ -231,13 +291,12 @@ def validate_latest_payload(payload: Any) -> List[str]:
     if not is_safe_identifier(payload.get("run_id")):
         errors.append("run_id: unsafe identifier")
     generated_at = payload.get("generated_at")
-    if not isinstance(generated_at, str) or "T" not in generated_at:
+    if (
+        not isinstance(generated_at, str)
+        or "T" not in generated_at
+        or normalize_strict_date(generated_at) is None
+    ):
         errors.append("generated_at: invalid ISO string")
-    else:
-        try:
-            datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
-        except ValueError:
-            errors.append("generated_at: invalid ISO string")
 
     results = payload.get("results")
     if not isinstance(results, list):
@@ -245,14 +304,17 @@ def validate_latest_payload(payload: Any) -> List[str]:
     counts = payload.get("counts")
     if not isinstance(counts, dict):
         errors.append("counts: must be an object")
-    elif not _non_negative_integer(counts.get("results")):
-        errors.append("counts.results: required non-negative integer")
-    elif any(
-        not _non_negative_integer(counts[name])
-        for name in _COUNT_KEYS
-        if name in counts
-    ):
-        errors.append("counts: invalid non-negative integer")
+    else:
+        if set(counts) - (_COUNT_KEYS | {"results"}):
+            errors.append("counts: unexpected fields")
+        if not _non_negative_integer(counts.get("results")):
+            errors.append("counts.results: required non-negative integer")
+        elif any(
+            not _non_negative_integer(counts[name])
+            for name in _COUNT_KEYS
+            if name in counts
+        ):
+            errors.append("counts: invalid non-negative integer")
 
     failures = payload.get("failures")
     if not isinstance(failures, list):
@@ -261,9 +323,21 @@ def validate_latest_payload(payload: Any) -> List[str]:
         for index, failure in enumerate(failures):
             errors.extend(_validate_failure(failure, index))
 
+    seen_job_keys = set()
     if isinstance(results, list):
         for index, result in enumerate(results):
             errors.extend(_validate_result(result, index))
+            if not isinstance(result, dict):
+                continue
+            portal = result.get("portal")
+            result_id = result.get("id")
+            if not is_safe_identifier(portal) or not is_safe_identifier(result_id):
+                continue
+            job_key = "{}:{}".format(portal, result_id)
+            if job_key in seen_job_keys:
+                errors.append("results[{}].job_key: duplicate job key".format(index))
+            else:
+                seen_job_keys.add(job_key)
     return errors
 
 
@@ -316,16 +390,23 @@ def _validate_result(result: Any, index: int) -> List[str]:
     return errors
 
 
-def sanitize_reviewer_output(payload: Any) -> Dict[str, Any]:
+def sanitize_reviewer_output(
+    payload: Any, expected_job_key: Optional[str] = None
+) -> Dict[str, Any]:
     """Validate and contact-redact one reviewer JSON object."""
     if not isinstance(payload, dict) or set(payload) != _REVIEWER_KEYS:
         raise ValueError("reviewer output has invalid fields")
     if not is_safe_identifier(payload.get("job_key")):
         raise ValueError("reviewer job_key is unsafe")
+    if expected_job_key is not None:
+        if not is_safe_identifier(expected_job_key):
+            raise ValueError("expected reviewer job_key is unsafe")
+        if payload["job_key"] != expected_job_key:
+            raise ValueError("reviewer job_key does not match candidate")
     score = payload.get("score")
-    if isinstance(score, bool) or not isinstance(score, (int, float)):
+    if not isinstance(score, float):
         raise ValueError("reviewer score is not numeric")
-    if not math.isfinite(float(score)) or not 0 <= float(score) <= 10 or round(float(score), 1) != float(score):
+    if not math.isfinite(score) or not 0 <= score <= 10 or round(score, 1) != score:
         raise ValueError("reviewer score is out of range")
     if payload.get("tier") not in {"A+", "A", "B+", "B", "C", "VETO"}:
         raise ValueError("reviewer tier is invalid")
@@ -336,7 +417,7 @@ def sanitize_reviewer_output(payload: Any) -> Dict[str, Any]:
     for field in ("strengths", "gaps"):
         values = payload.get(field)
         if not isinstance(values, list) or len(values) != 3 or not all(
-            isinstance(value, str) and value for value in values
+            isinstance(value, str) and bool(value.strip()) for value in values
         ):
             raise ValueError("reviewer {} is invalid".format(field))
     if not isinstance(payload.get("salary"), str) or not isinstance(payload.get("notes"), str):
@@ -356,6 +437,6 @@ def sanitize_reviewer_output(payload: Any) -> Dict[str, Any]:
         sanitized["notes"] += " [CONTACT_REDACTION_APPLIED] no raw contact data is persisted."
     for field in ("strengths", "gaps", "salary", "notes"):
         values = sanitized[field] if isinstance(sanitized[field], list) else [sanitized[field]]
-        if any(_contains_contact_pattern(value) for value in values):
+        if any(contains_contact_pattern(value) for value in values):
             raise ValueError("reviewer contact pattern remains")
     return sanitized
