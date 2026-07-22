@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Fixture feed</title>
+    <item data-note="attribute contains > and &quot;quotes&quot;">
+      <title><![CDATA[Acme: AI Consultant]]></title>
+      <region><![CDATA[Anywhere &amp; Europe]]></region>
+      <description><![CDATA[<div data-note="1 > 0"><p>Care &amp; AI &lt;safe&gt;</p><p>Line<br class="break > here"/>Two</p></div>]]></description>
+      <pubDate>Tue, 22 Jul 2026 10:00:00 +0000</pubDate>
+      <link>https://example.test/jobs/ai-consultant?a=1&amp;b=2</link>
+    </item>
+    <item>
+      <title>No Company Role &amp; Design</title>
+      <description>&lt;p&gt;Healthcare only, with a &lt;br data-value="x &gt; y"&gt; visible break.&lt;/p&gt;</description>
+      <pubDate>Wed, 23 Jul 2026 11:00:00 -0500</pubDate>
+      <link>https://example.test/jobs/no-company</link>
+    </item>
+    <item>
+      <title>Bad Date Company: Invalid Date Role</title>
+      <description>Invalid date should not roll over.</description>
+      <pubDate>31 Feb 2026 12:00:00 +0000</pubDate>
+      <link>https://example.test/jobs/invalid-date</link>
+    </item>
+    <item>
+      <title>Duplicate Company: Duplicate Role</title>
+      <link>https://example.test/jobs/ai-consultant?a=1&amp;b=2</link>
+    </item>
+    <item>
+      <title>Missing Link Role</title>
+      <description>No stable URL means this row is skipped.</description>
+    </item>
+    <item data-note="malformed but closed">
+      <title>Malformed item</title>
+      <link></link>
+    </item>
+    <item>
+      <title>Unclosed item should be ignored</title>
+      <link>https://example.test/jobs/unclosed</link>
+    </channel>
+  </rss>
