@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { apiGet, DEFAULT_CATEGORIES, HIMALAYAS_API_BASE } from "../src/helpers"
+import {
+  apiGet,
+  DEFAULT_CATEGORIES,
+  HIMALAYAS_API_BASE,
+  InvalidArgumentError,
+  VERIFIED_WWR_CATEGORIES,
+} from "../src/helpers"
 import {
   buildHimalayasUrl,
   buildWwrUrl,
@@ -70,11 +76,23 @@ describe("source URLs and category parsing", () => {
     expect(parsed.searchParams.get("offset")).toBe("0")
   })
 
-  test("accepts repeated and comma-separated categories without inventing values", () => {
-    expect(parseCategories(["remote-programming-jobs,remote-product-jobs", "remote-management-and-finance-jobs"])).toEqual([
+  test("accepts every verified category and keeps defaults within the allowlist", () => {
+    for (const category of VERIFIED_WWR_CATEGORIES) {
+      expect(parseCategories([category])).toEqual([category])
+    }
+    expect(DEFAULT_CATEGORIES.every((category) => VERIFIED_WWR_CATEGORIES.includes(category))).toBe(true)
+    expect(() => parseCategories(["remote-sales-and-marketing-jobs"])).toThrow(InvalidArgumentError)
+  })
+
+  test("accepts repeated and comma-separated verified categories", () => {
+    expect(parseCategories([
+      "remote-programming-jobs,remote-product-jobs",
+      "remote-management-and-finance-jobs,remote-devops-sysadmin-jobs",
+    ])).toEqual([
       "remote-programming-jobs",
       "remote-product-jobs",
       "remote-management-and-finance-jobs",
+      "remote-devops-sysadmin-jobs",
     ])
   })
 })
@@ -131,6 +149,7 @@ describe("source selection and merge", () => {
     expect(table.stdout).toContain("PORTAL")
     expect(table.stdout).toContain("wwr")
     expect(table.stdout).toContain("Sources: We Work Remotely")
+    expect(table.stdout).not.toContain("Himalayas")
 
     const plain = await runWithFetch(
       opts({ source: "wwr", categories: ["remote-programming-jobs"], format: "plain", limit: 1 }),
@@ -139,6 +158,15 @@ describe("source selection and merge", () => {
     expect(plain.exitCode).toBe(0)
     expect(plain.stdout).toContain("portal: wwr")
     expect(plain.stdout).toContain("https://example.test/jobs/ai-consultant")
+    expect(plain.stdout).not.toContain("Himalayas")
+
+    const himalayas = await runWithFetch(
+      opts({ source: "himalayas", format: "table", limit: 1 }),
+      async () => jsonResponse(200, himalayasFixture),
+    )
+    expect(himalayas.exitCode).toBe(0)
+    expect(himalayas.stdout).toContain("Sources: Himalayas public API")
+    expect(himalayas.stdout).not.toContain("We Work Remotely")
   })
 
   test("whole-token AND query does not match care inside Healthcare", async () => {
@@ -198,5 +226,20 @@ describe("retry and source failures", () => {
     expect(result.exitCode).toBe(0)
     expect(result.errors).toEqual([])
     expect((result.output.meta as { sources: string[] }).sources).toEqual(["wwr"])
+  })
+
+  test("human output reports an unavailable Himalayas source without attributing it as active", async () => {
+    const result = await runWithFetch(
+      opts({ source: "both", categories: ["remote-programming-jobs"], format: "table", limit: 1 }),
+      async (input) => {
+        if (String(input).startsWith("https://himalayas.app")) throw new Error("Himalayas unavailable")
+        return rssResponse()
+      },
+    )
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain("Sources: We Work Remotely RSS")
+    expect(result.stdout).toContain("Unavailable: Himalayas public API")
+    expect(result.stdout).not.toContain("Sources: We Work Remotely RSS and Himalayas public API")
   })
 })

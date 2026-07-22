@@ -2,6 +2,12 @@ import { createHash } from "node:crypto"
 
 export const WWR_RSS_BASE = "https://weworkremotely.com/categories"
 export const HIMALAYAS_API_BASE = "https://himalayas.app/jobs/api"
+export const VERIFIED_WWR_CATEGORIES = [
+  "remote-programming-jobs",
+  "remote-management-and-finance-jobs",
+  "remote-product-jobs",
+  "remote-devops-sysadmin-jobs",
+] as const
 export const DEFAULT_CATEGORIES = [
   "remote-programming-jobs",
   "remote-management-and-finance-jobs",

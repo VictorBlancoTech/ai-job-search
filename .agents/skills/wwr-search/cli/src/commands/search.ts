@@ -6,9 +6,11 @@ import {
   apiGetText,
   jobsFromHimalayasResponse,
   jobsFromRss,
+  InvalidArgumentError,
   stripHtml,
   toHimalayasResult,
   toWwrResult,
+  VERIFIED_WWR_CATEGORIES,
   writeError,
   type ErrorWriter,
   type HimalayasResponse,
@@ -49,10 +51,18 @@ export function parseCategories(values: string[]): string[] {
     .flatMap((value) => value.split(","))
     .map((value) => value.trim())
     .filter(Boolean)
-  if (categories.length === 0) throw new Error("at least one WWR category is required")
+  if (categories.length === 0) throw new InvalidArgumentError("at least one WWR category is required")
 
-  const invalid = categories.find((category) => !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category))
-  if (invalid !== undefined) throw new Error(`invalid WWR category slug "${invalid}"`)
+  const invalid = categories.find(
+    (category) =>
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category) ||
+      !(VERIFIED_WWR_CATEGORIES as readonly string[]).includes(category),
+  )
+  if (invalid !== undefined) {
+    throw new InvalidArgumentError(
+      `--category must be one of ${VERIFIED_WWR_CATEGORIES.join(", ")}, got "${invalid}"`,
+    )
+  }
   return [...new Set(categories)]
 }
 
@@ -151,10 +161,28 @@ interface Column {
   cell: (result: JobResult) => string
 }
 
-const ATTRIBUTION = "Sources: We Work Remotely RSS and Himalayas public API"
+interface SourceFailure {
+  source: Portal
+  error: Error
+}
 
-function renderTable(rows: JobResult[]): string {
-  if (rows.length === 0) return ["portal: wwr-search", "No results.", ATTRIBUTION].join("\n")
+const SOURCE_LABELS: Record<Portal, string> = {
+  wwr: "We Work Remotely RSS",
+  himalayas: "Himalayas public API",
+}
+
+function sourceStatus(sources: Portal[], failures: SourceFailure[]): string[] {
+  const lines = [`Sources: ${sources.map((source) => SOURCE_LABELS[source]).join(" and ")}`]
+  for (const failure of failures) {
+    if (!sources.includes(failure.source)) {
+      lines.push(`Unavailable: ${SOURCE_LABELS[failure.source]} (${failure.error.message})`)
+    }
+  }
+  return lines
+}
+
+function renderTable(rows: JobResult[], sources: Portal[], failures: SourceFailure[]): string {
+  if (rows.length === 0) return ["portal: wwr-search", "No results.", ...sourceStatus(sources, failures)].join("\n")
   const columns: Column[] = [
     { header: "PORTAL", width: 10, cell: (result) => result.portal },
     { header: "TITLE", width: 38, cell: (result) => result.title },
@@ -167,11 +195,11 @@ function renderTable(rows: JobResult[]): string {
     cells.map((cell, index) => cell.slice(0, columns[index].width).padEnd(columns[index].width)).join("  ")
   const header = row(columns.map((column) => column.header))
   const body = rows.map((result) => row(columns.map((column) => column.cell(result))))
-  return ["portal: wwr-search", header, "-".repeat(header.length), ...body, ATTRIBUTION].join("\n")
+  return ["portal: wwr-search", header, "-".repeat(header.length), ...body, ...sourceStatus(sources, failures)].join("\n")
 }
 
-function renderPlain(rows: JobResult[]): string {
-  if (rows.length === 0) return ["portal: wwr-search", "No results.", ATTRIBUTION].join("\n")
+function renderPlain(rows: JobResult[], sources: Portal[], failures: SourceFailure[]): string {
+  if (rows.length === 0) return ["portal: wwr-search", "No results.", ...sourceStatus(sources, failures)].join("\n")
   const block = (result: JobResult) =>
     [
       `portal: ${result.portal}`,
@@ -180,7 +208,7 @@ function renderPlain(rows: JobResult[]): string {
       `  id: ${result.id}`,
       `  ${result.url}`,
     ].join("\n")
-  return [rows.map(block).join("\n\n"), ATTRIBUTION].join("\n\n")
+  return [rows.map(block).join("\n\n"), sourceStatus(sources, failures).join("\n")].join("\n\n")
 }
 
 function sourceUnavailable(source: Portal, error: unknown): Error {
@@ -192,16 +220,16 @@ export async function runSearch(opts: SearchOpts, dependencies: SearchDependenci
   const emitError = dependencies.writeError ?? writeError
   const groups: JobResult[][] = []
   const successfulSources: Portal[] = []
-  const failures: Error[] = []
+  const failures: SourceFailure[] = []
 
   if (opts.source === "wwr" || opts.source === "both") {
     try {
       groups.push(await fetchWwr(opts.categories, dependencies))
       successfulSources.push("wwr")
     } catch (error) {
-      failures.push(sourceUnavailable("wwr", error))
+      failures.push({ source: "wwr", error: sourceUnavailable("wwr", error) })
       if (opts.source === "wwr") {
-        emitError(failures[0]!.message, "SOURCE_UNAVAILABLE")
+        emitError(failures[0]!.error.message, "SOURCE_UNAVAILABLE")
         return 1
       }
     }
@@ -212,16 +240,19 @@ export async function runSearch(opts: SearchOpts, dependencies: SearchDependenci
       groups.push(await fetchHimalayas(opts.limit, dependencies))
       successfulSources.push("himalayas")
     } catch (error) {
-      failures.push(sourceUnavailable("himalayas", error))
+      failures.push({ source: "himalayas", error: sourceUnavailable("himalayas", error) })
       if (opts.source === "himalayas") {
-        emitError(failures.at(-1)!.message, "SOURCE_UNAVAILABLE")
+        emitError(failures.at(-1)!.error.message, "SOURCE_UNAVAILABLE")
         return 1
       }
     }
   }
 
   if (successfulSources.length === 0) {
-    emitError(failures.map((failure) => failure.message).join("; ") || "no source was available", "SOURCE_UNAVAILABLE")
+    emitError(
+      failures.map((failure) => failure.error.message).join("; ") || "no source was available",
+      "SOURCE_UNAVAILABLE",
+    )
     return 1
   }
 
@@ -237,8 +268,8 @@ export async function runSearch(opts: SearchOpts, dependencies: SearchDependenci
     results: rows,
   }
 
-  if (opts.format === "table") process.stdout.write(renderTable(rows) + "\n")
-  else if (opts.format === "plain") process.stdout.write(renderPlain(rows) + "\n")
+  if (opts.format === "table") process.stdout.write(renderTable(rows, successfulSources, failures) + "\n")
+  else if (opts.format === "plain") process.stdout.write(renderPlain(rows, successfulSources, failures) + "\n")
   else process.stdout.write(JSON.stringify(payload, null, 2) + "\n")
   return 0
 }

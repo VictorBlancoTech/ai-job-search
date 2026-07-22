@@ -22,6 +22,7 @@ describe("CLI validation", () => {
     const cases = [
       ["search", "--format", "xml"],
       ["search", "--source", "adzuna"],
+      ["search", "--category", "remote-sales-and-marketing-jobs"],
       ["search", "--category", "../private"],
       ["search", "--category"],
       ["search", "--unknown", "value"],

@@ -28,7 +28,9 @@ bun run .agents/skills/wwr-search/cli/src/cli.ts search [flags]
   2026-07-22 returned `200 application/rss+xml` for
   `remote-programming-jobs`, `remote-management-and-finance-jobs`,
   `remote-product-jobs`, and `remote-devops-sysadmin-jobs`. The default is the
-  first two categories to keep the default request volume bounded.
+  first two categories to keep the default request volume bounded. The CLI
+  allowlist is exactly those four verified slugs; unknown or invented category
+  values are rejected as `INVALID_ARGUMENT` before any request is made.
 - WWR is fetched with a descriptive User-Agent, a 20-second timeout, and at
   most one retry for HTTP 429 or 5xx responses. Use the RSS feeds fairly: no
   aggressive polling, bulk harvesting, or bypassing access controls. Keep the
@@ -56,7 +58,10 @@ bun run .agents/skills/wwr-search/cli/src/cli.ts search [flags]
   diacritics; `care` does not match `Healthcare`. Empty query matches all.
 - `--source wwr|himalayas|both` selects sources; default `both`.
 - `--category <slug>` is repeatable or comma-separated and applies to WWR.
-  Default: `remote-programming-jobs,remote-management-and-finance-jobs`.
+  Allowed slugs: `remote-programming-jobs`,
+  `remote-management-and-finance-jobs`, `remote-product-jobs`, and
+  `remote-devops-sysadmin-jobs`. Default:
+  `remote-programming-jobs,remote-management-and-finance-jobs`.
 - `--limit <n>` / `-n` accepts integers `1..100` and is applied after source
   merging and local filtering; default `50`.
 - `--format json|table|plain` defaults to `json`. Invalid flags exit `2`.
@@ -99,8 +104,11 @@ JSON is the complete pipeline payload:
 - Dates are normalized strictly to `YYYY-MM-DD`; impossible or malformed dates
   become `null` rather than rolling over. Descriptions strip HTML, preserve
   readable breaks, and decode safe named/numeric entities.
-- `table` and `plain` are human-readable summaries. They retain the per-row
-  portal and source attribution; JSON retains every unified result field.
+- `table` and `plain` are human-readable summaries. They attribute only
+  successfully queried sources. Under `both`, a failed source is shown as
+  `Unavailable` while the available source remains the active attribution;
+  JSON retains every unified result field and lists only active sources in
+  `meta.sources`.
 - Errors are JSON on stderr as `{ "error": "...", "code": "..." }`.
   Invalid arguments use exit `2`; source/API and response failures use exit `1`.
 
