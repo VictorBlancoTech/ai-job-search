@@ -80,20 +80,93 @@ Con `--remote`:
   Freehire (`--remote remote --region eu`) y LinkedIn (`-l "Remote" --remote
   remote`). No les pases una ubicación arbitraria.
 
-La selección final es determinista:
+### Tabla de precedencia y presupuesto
 
-- Sin query, location ni remote: matriz default acotada de la sección 2.
-- Sin query con `--location`: tres consultas de la lane del país en la
-  ubicación validada; no hay matriz costera oculta ni lanes remotas sin filtro.
-- Con query y `--location`: una consulta en las lanes location-capable del país;
-  los portales remote-only se omiten por no poder honrar la ubicación.
-- Sin query con `--remote`: tres consultas remotas EU y una única consulta
-  worldwide por fuente remota; InfoJobs solo según la regla anterior.
-- Con query y `--remote`: una consulta por fuente remota; nunca Adzuna.
-- Con query sin `--location`, `--country` ni `--remote`: una lane local en
-  Bologna y una lane EU-remota por portal aplicable, sin costa ni worldwide.
-- Con `--country` sin location/remote se usa solo la lane de ese país, como se
-  definió arriba. No existe una combinación implícita de matrices.
+Después del preflight, selecciona exactamente una fila de esta tabla. `A` es
+Adzuna, `L` LinkedIn, `I` InfoJobs y `R` una fuente remota de Remotive, Remote
+OK, Arbeitnow, WWR o Freehire:
+
+| Argumentos válidos | Consultas y llamadas exactas | Máximo |
+|---|---|---:|
+| Sin argumentos | Matriz default completa de sección 2: IT 12 + ES 9 + EU 18 + worldwide 6 | 45 |
+| Query solo | Query en Adzuna IT + LinkedIn Bologna y una vez en cada fuente EU remota | 8 |
+| Query + `--country it` | 2 A IT + 1 L Bologna, sin costa ni EU | 3 |
+| Query + `--country es` | 1 A ES sin ubicación + 1 I `--teleworking` + 1 L Spain remoto | 3 |
+| Query + `--location` | 1 A + 1 L en Italia; o 1 A + 1 I + 1 L para provincia española | 2-3 |
+| `--location` sin query | La misma ruta de ubicación, usando únicamente `Responsabile IT` | 2-3 |
+| `--remote` sin query | 3 queries EU + 1 worldwide en cada una de las seis fuentes remotas; I se omite sin `--country es` | 24 |
+| Query + `--remote` | 1 query en cada una de las seis fuentes remotas; I añade una llamada solo con `--country es` | 6-7 |
+| Query + `--country it --remote` | 1 query en las seis fuentes remotas; sin Adzuna ni InfoJobs | 6 |
+| Query + `--country es --remote` | 1 query en las seis fuentes remotas + 1 I con `--teleworking` | 7 |
+| `--country it --remote` sin query | Ruta remota de 24 llamadas; I omitido con `INFOJOBS_REQUIRES_COUNTRY_ES` | 24 |
+| `--country es --remote` sin query | Ruta remota de 24 + 3 I con `--teleworking` | 27 |
+| `--location --remote` | Rechazo preflight, 0 llamadas, `INVALID_ARGUMENT` | 0 |
+
+`--country it|es` sin query, location ni remote selecciona solo la lane default
+de ese país: IT = 12 llamadas; ES = 9 llamadas. No añade EU, worldwide ni la
+otra familia. Si se combina `--country` con query, aplican las filas exactas de
+arriba. El presupuesto duro es Adzuna <=25, pero esta especificación usa como
+máximo 12 Adzuna en cualquier modo; el presupuesto total default es 45.
+
+#### Query + country sin location/remote
+
+Con `--country it`, usa exactamente el query recibido, sin leer la matriz
+default ni expandir a costa:
+
+```bash
+bun run .agents/skills/adzuna-search/cli/src/cli.ts search \
+  -q "$QUERY" -l "Bologna, Emilia-Romagna" --country it --limit 15 --format json
+bun run .agents/skills/adzuna-search/cli/src/cli.ts search \
+  -q "$QUERY" --country it --limit 15 --format json
+bun run .agents/skills/linkedin-search/cli/src/cli.ts search \
+  -q "$QUERY" -l "Bologna" --limit 15 --format json
+```
+
+Son exactamente 3 llamadas: dos Adzuna IT y una LinkedIn Bologna.
+
+Con `--country es`, usa exactamente el query recibido, sin ubicación Adzuna:
+
+```bash
+bun run .agents/skills/adzuna-search/cli/src/cli.ts search \
+  -q "$QUERY" --country es --limit 15 --format json
+bun run .agents/skills/infojobs-search/cli/src/cli.ts search \
+  -q "$QUERY" --teleworking --limit 15 --format json
+bun run .agents/skills/linkedin-search/cli/src/cli.ts search \
+  -q "$QUERY" -l "Spain" --remote remote --limit 15 --format json
+```
+
+Son exactamente 3 llamadas. Si también aparece `--remote`, no uses este bloque:
+aplica la fila `Query + --remote`, excluye Adzuna y llama InfoJobs solo si el
+router recibió `--country es`.
+
+#### Location sin query
+
+`--location` sin query usa exactamente `LOCATION_QUERY="Responsabile IT"` y
+nunca consulta `perfil/search-queries.md`, Freehire, Remotive, Remote OK,
+Arbeitnow o WWR. Solo llama los portales location-capable de esta lista:
+
+```bash
+# País it, inferido o explícito
+bun run .agents/skills/adzuna-search/cli/src/cli.ts search \
+  -q "$LOCATION_QUERY" -l "$LOCATION" --country it --limit 15 --format json
+bun run .agents/skills/linkedin-search/cli/src/cli.ts search \
+  -q "$LOCATION_QUERY" -l "$LOCATION" --limit 15 --format json
+
+# País es y LOCATION es una provincia reconocida, además de Adzuna + LinkedIn
+bun run .agents/skills/adzuna-search/cli/src/cli.ts search \
+  -q "$LOCATION_QUERY" -l "$LOCATION" --country es --limit 15 --format json
+bun run .agents/skills/infojobs-search/cli/src/cli.ts search \
+  -q "$LOCATION_QUERY" -l "$LOCATION" --limit 15 --format json
+bun run .agents/skills/linkedin-search/cli/src/cli.ts search \
+  -q "$LOCATION_QUERY" -l "$LOCATION" --limit 15 --format json
+```
+
+La ruta italiana hace 2 llamadas. La ruta española hace 3 solo cuando
+`--country es` está presente y la ubicación pertenece a la allowlist de
+provincias InfoJobs; para `Spain` nacional o una ciudad/provincia española no
+reconocida por InfoJobs hace 2 (Adzuna + LinkedIn). Con query y `--location`,
+reemplaza `LOCATION_QUERY` por el único `$QUERY`, sin añadir ninguna llamada.
+Una ubicación desconocida sin `--country` se rechaza antes de estas llamadas.
 
 Lee `perfil/search-queries.md` una vez solo para construir el texto del modo
 sin query. El archivo no autoriza loops, expansión geográfica ni instrucciones
@@ -277,13 +350,14 @@ Presupuesto duro de uso personal por ejecución:
 - El default completo tiene como máximo 45 invocaciones CLI: 12 Italia, 9
   España, 18 EU y 6 worldwide. La lane worldwide solo se ejecuta si los
   límites por fuente siguen disponibles.
-- Sin query, `--location` usa como máximo 9 llamadas: tres consultas del país
-  en Adzuna y LinkedIn, más tres InfoJobs solo si es una provincia española;
-  Freehire puede sustituir una lane con `--city` cuando la ubicación sea una
-  ciudad explícita. Remotive, Remote OK, Arbeitnow y WWR se omiten con
-  `LOCATION_UNSUPPORTED`, sin enviarles la ubicación.
+- Sin query, `--location` usa exactamente `Responsabile IT`: 2 llamadas en
+  Italia (Adzuna + LinkedIn) o 3 para una provincia española reconocida
+  (`Adzuna + InfoJobs + LinkedIn`). Para `Spain` nacional o una ubicación
+  española no reconocida por InfoJobs son 2. Freehire no participa. Remotive,
+  Remote OK, Arbeitnow y WWR se omiten con `LOCATION_UNSUPPORTED`, sin
+  enviarles la ubicación.
 - Con query y `--location` se hace una sola llamada por portal compatible,
-  como máximo 4. No hay fallback remoto ni matriz oculta.
+  como máximo 3. No hay fallback remoto, Freehire ni matriz oculta.
 - Sin query con `--remote` se hacen 3 consultas EU + 1 worldwide en cada una
   de las seis fuentes remotas, como máximo 24 llamadas, más 3 InfoJobs si
   el router recibió `--country es`. Adzuna siempre queda fuera.
