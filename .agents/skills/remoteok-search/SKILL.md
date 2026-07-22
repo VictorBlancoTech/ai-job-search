@@ -91,7 +91,8 @@ bun run .agents/skills/remoteok-search/cli/src/cli.ts search --tag "react native
 }
 ```
 
-- `id` es siempre un string; `date` se recorta a `YYYY-MM-DD` o `null`.
+- `id` es siempre un string; `date` se normaliza a `YYYY-MM-DD` solo si es
+  valido y parseable, y es `null` para valores ausentes o invalidos.
 - `description` elimina HTML, conserva saltos legibles y decodifica entidades
   HTML comunes y numericas.
 - `salary` es `min-max` solo cuando ambos limites son positivos; en otro caso es

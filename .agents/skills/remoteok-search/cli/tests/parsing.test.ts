@@ -60,6 +60,20 @@ describe("toResult - reshape a RemoteOK job into the portal-skill contract", () 
       salary: null,
     })
   })
+
+  test("normalizes valid dates and rejects invalid date values", () => {
+    expect(toResult(fixtureJob("9004")).date).toBeNull()
+    expect(
+      toResult({ ...fixtureJob("9004"), date: "2026-07-21T10:00:00+00:00" }).date,
+    ).toBe("2026-07-21")
+    expect(
+      toResult({
+        ...fixtureJob("9004"),
+        date: new Date("2026-07-21T10:00:00+00:00"),
+      } as unknown as RemoteOkJob).date,
+    ).toBe("2026-07-21")
+    expect(toResult({ ...fixtureJob("9004"), date: "2026-02-30" }).date).toBeNull()
+  })
 })
 
 describe("stripHtml", () => {
@@ -90,5 +104,7 @@ describe("stripHtml", () => {
     expect(stripHtml("")).toBe("")
     expect(stripHtml(null)).toBe("")
     expect(stripHtml(undefined)).toBe("")
+    expect(stripHtml({ length: 1 })).toBe("")
+    expect(stripHtml(42)).toBe("")
   })
 })

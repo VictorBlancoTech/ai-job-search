@@ -70,11 +70,11 @@ export async function apiGet<T>(url: string, options: ApiGetOptions = {}): Promi
 
 export interface RemoteOkJob {
   id: string | number
-  date?: string | null
+  date?: unknown
   company?: string | null
   position?: string | null
   tags?: unknown
-  description?: string | null
+  description?: unknown
   location?: string | null
   url?: string | null
   salary_min?: number | null
@@ -123,6 +123,33 @@ function formatSalary(minValue: unknown, maxValue: unknown): string | null {
   return min !== null && max !== null ? `${min}-${max}` : null
 }
 
+function normalizeDate(value: unknown): string | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10)
+  }
+  if (typeof value !== "string") return null
+
+  const dateText = value.trim()
+  if (!dateText) return null
+  const isoDate = dateText.match(/^(\d{4})-(\d{2})-(\d{2})(?=$|T|[ \t])/)
+  const parsed = new Date(dateText)
+  if (Number.isNaN(parsed.getTime())) return null
+  if (!isoDate) return parsed.toISOString().slice(0, 10)
+
+  const year = Number(isoDate[1])
+  const month = Number(isoDate[2])
+  const day = Number(isoDate[3])
+  const calendarDate = new Date(Date.UTC(year, month - 1, day))
+  if (
+    calendarDate.getUTCFullYear() !== year ||
+    calendarDate.getUTCMonth() !== month - 1 ||
+    calendarDate.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return isoDate[0]
+}
+
 export function toResult(job: RemoteOkJob): JobResult {
   const id = String(job.id)
   return {
@@ -132,7 +159,7 @@ export function toResult(job: RemoteOkJob): JobResult {
     company: text(job.company) || null,
     location: text(job.location) || "Worldwide",
     url: text(job.url) || `https://remoteok.com/remote-jobs/${id}`,
-    date: text(job.date) ? text(job.date).slice(0, 10) : null,
+    date: normalizeDate(job.date),
     description: stripHtml(job.description),
     remote: true,
     salary: formatSalary(job.salary_min, job.salary_max),
@@ -283,8 +310,8 @@ function stripTagsPreservingBreaks(html: string): string {
 }
 
 /** Strip tags, retain readable breaks, and decode safe named/numeric entities. */
-export function stripHtml(html: string | null | undefined): string {
-  if (!html) return ""
+export function stripHtml(html: unknown): string {
+  if (typeof html !== "string" || !html) return ""
   return decodeHtmlEntities(stripTagsPreservingBreaks(html))
     .replace(/\r\n?/g, "\n")
     .replace(/[^\S\r\n]+/g, " ")

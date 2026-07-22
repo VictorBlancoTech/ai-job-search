@@ -57,11 +57,11 @@
   },
   {
     "id": "9004",
-    "date": null,
+    "date": "garbage",
     "company": null,
     "position": null,
     "tags": null,
-    "description": null,
+    "description": { "length": 1 },
     "location": null,
     "url": null,
     "salary_min": 0,
