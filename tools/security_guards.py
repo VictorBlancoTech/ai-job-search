@@ -32,7 +32,7 @@ REQUIRED_IGNORE_RULES = [
     "job_scraper/rank_runs/*",
     "job_scraper/latest-rank.json",
     "cv/victor_*.tex",
-    # Tailored per-application variants created by /apply (section subfolders).
+    # Tailored per-application variants created by /job-apply (section subfolders).
     "cv/victor_*/**",
     # Real CV masters and their section subfolders (real personal data).
     "cv/victor-cv-master-*.tex",
@@ -53,6 +53,9 @@ REQUIRED_IGNORE_RULES = [
     "tracker/job_search_tracker.csv",
     "tracker/aplicaciones/**",
     "tracker/borradores/**",
+    "tracker/digests/**",
+    "tracker/secondbrain-queue/**",
+    "job_scraper/.digest.lock/",
 ]
 
 # Negation (re-include) rules legitimately shipped.

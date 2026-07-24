@@ -7,7 +7,7 @@ description: >
   roles. Trigger phrases: remote jobs, remote developer jobs, find a remote job,
   search remote vacancies, or look up Remote OK openings.
 context: fork
-enabled: true  # set to false to keep this portal installed but have /scrape skip it
+enabled: true  # set to false to keep this portal installed but have /job-scrape skip it
 allowed-tools: Bash(bun run .agents/skills/remoteok-search/cli/src/cli.ts *)
 ---
 

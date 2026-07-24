@@ -1,0 +1,40 @@
+{
+  "type": "jobs",
+  "hits": 487,
+  "pages": 25,
+  "jobs": [
+    {
+      "url": "https://www.careerjet.it/job/view/abc123-responsabile-it-bologna.html",
+      "title": "Responsabile IT",
+      "company": "TechNova",
+      "locations": "Bologna, Emilia-Romagna",
+      "description": "Cerchiamo un <strong>Responsabile IT</strong> per la nostra sede di Bologna.<br>Gestione infrastrutture, sicurezza e coordinamento del team tecnico.",
+      "date": "mercoledì, 23 luglio 2026",
+      "salary": "",
+      "site": "careerjet"
+    },
+    {
+      "url": "https://www.careerjet.it/job/view/def456-erp-developer-milano.html",
+      "title": "ERP Developer",
+      "company": "Orienta",
+      "locations": "Milano, Lombardia",
+      "description": "Sviluppatore ERP con esperienza su SAP e gestione di ambienti produttivi.",
+      "date": "lunedì, 21 luglio 2026",
+      "salary": "€40,000 - €50,000 per year",
+      "salary_min": 40000,
+      "salary_max": 50000,
+      "salary_currency_code": "EUR",
+      "salary_type": "Y",
+      "site": "careerjet"
+    },
+    {
+      "url": "https://www.careerjet.it/job/view/ghi789-data-analyst-roma.html",
+      "title": "Data Analyst",
+      "company": "DataCo",
+      "locations": "Roma, Lazio",
+      "description": "Analista dati junior per il team Business Intelligence.",
+      "date": "venerdì, 18 luglio 2026",
+      "site": "careerjet"
+    }
+  ]
+}

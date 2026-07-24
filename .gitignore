@@ -33,6 +33,7 @@ job_scraper/rank_runs/*
 !job_scraper/rank_runs/.gitkeep
 job_scraper/latest-rank.json
 cv/victor_*.tex
+cv/victor_*.txt
 cv/victor_*/**
 cv/victor-cv-master-*.tex
 cv/cv-master/**
@@ -51,9 +52,12 @@ documents/postings/**
 tracker/job_search_tracker.csv
 tracker/aplicaciones/**
 tracker/borradores/**
+tracker/digests/**
+tracker/secondbrain-queue/**
 !tracker/.gitkeep
 !tracker/borradores/.gitkeep
 !tracker/aplicaciones/.gitkeep
+job_scraper/.digest.lock/
 *_BehavioralReport.pdf
 linkedin_Profile.pdf
 

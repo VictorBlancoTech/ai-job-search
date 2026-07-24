@@ -1,4 +1,8 @@
-# /apply - Pipeline de Aplicación (drafter-reviewer)
+---
+description: Adapta CV y carta a una oferta con revisión, PDF y verificación ATS.
+---
+
+# /job-apply - Pipeline de Aplicación (drafter-reviewer)
 
 Orquestas un workflow de aplicación con dos agentes. La oferta viene en `$ARGUMENTS`
 (URL o texto pegado). Flag opcional: `--pdf` → compilar también la carta en LaTeX.
@@ -218,5 +222,5 @@ más impactante; gaps declarados.
 - `tracker/borradores/carta_<empresa>_<rol>.md` (+ copia del `.pdf` formal si `--pdf`;
   el .tex fuente de la carta queda en `cv/carta_<empresa>_<rol>.tex`)
 
-Cierra con: "Ambos listos para tu revisión. ¿Aplicamos? Cuando la envíes, /outcome
-la registra (Fase 3)."
+Cierra con: "Ambos listos para tu revisión. ¿Aplicamos? Cuando la envíes, /job-outcome
+la registra."

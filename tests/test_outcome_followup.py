@@ -1,11 +1,11 @@
-"""Guards for /outcome's follow-up branch (Step 2b).
+"""Guards for /job-outcome's follow-up branch (Step 2b).
 
-The branch is part of the /outcome markdown spec (the spec IS the
+The branch is part of the /job-outcome markdown spec (the spec IS the
 implementation), so these tests pin the invariants that would break
 silently: the draft-only rule (the branch must never send anything on the
 user's behalf), the no-new-claims rule that keeps follow-ups inside the
 framework's never-fabricate boundary, the two-follow-up cap that terminates
-into /outcome's own no_response flow, and the deliberate contrast with
+into /job-outcome's own no_response flow, and the deliberate contrast with
 /gmail-sync's 30-day staleness flag.
 """
 import subprocess
@@ -15,8 +15,6 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.skip(reason="comando pendiente de portar a .opencode — Fase 3+")
-
 try:
     import yaml  # noqa: F401 - only probing availability for the lint integration test
     _HAVE_YAML = True
@@ -24,7 +22,7 @@ except ImportError:
     _HAVE_YAML = False
 
 REPO = Path(__file__).resolve().parent.parent
-COMMAND = REPO / ".claude" / "commands" / "outcome.md"
+COMMAND = REPO / ".opencode" / "commands" / "job-outcome.md"
 
 
 class OutcomeFollowupBranchSpec(unittest.TestCase):
@@ -41,7 +39,7 @@ class OutcomeFollowupBranchSpec(unittest.TestCase):
         self.assertIn(
             "`followup <N>`",
             text,
-            "spec lost the /outcome followup argument forms",
+            "spec lost the /job-outcome followup argument forms",
         )
 
     def test_draft_only_rule_present(self):

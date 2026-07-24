@@ -1,6 +1,6 @@
 # Documents Folder
 
-This folder holds your actual career documents. The `/setup` command reads everything here and uses it to populate the candidate profile files under `perfil/`. It is safe to re-run `/setup` as you add new documents — it merges intelligently and will never overwrite existing content without asking you first.
+This folder holds your actual career documents. The `/job-setup` command reads everything here and uses it to populate the candidate profile files under `perfil/`. It is safe to re-run `/job-setup` as you add new documents — it merges intelligently and will never overwrite existing content without asking you first.
 
 ---
 
@@ -31,16 +31,16 @@ Your master CV — the most complete, unedited version of your professional reco
 
 **Supported formats:** `.pdf`, `.tex`
 
-**What `/setup` extracts:**
+**What `/job-setup` extracts:**
 - Work experience (titles, companies, dates, bullet points)
 - Education (degrees, institutions, dates, thesis topics)
 - Technical skills
 - Awards and publications
 - Contact information
 
-**Naming:** Any filename works. If multiple files are present, `/setup` reads all of them and cross-references for consistency.
+**Naming:** Any filename works. If multiple files are present, `/job-setup` reads all of them and cross-references for consistency.
 
-**Tip:** Keep your most comprehensive CV here (not a tailored variant). The skill files are the canonical source — tailored CVs are generated per application by `/apply`.
+**Tip:** Keep your most comprehensive CV here (not a tailored variant). The skill files are the canonical source — tailored CVs are generated per application by `/job-apply`.
 
 ---
 
@@ -52,7 +52,7 @@ Your LinkedIn profile exported as a PDF.
 
 **Supported formats:** `.pdf`
 
-**What `/setup` extracts:**
+**What `/job-setup` extracts:**
 - Work experience and dates (cross-referenced against your CV)
 - Skills and endorsements
 - Education
@@ -62,7 +62,7 @@ Your LinkedIn profile exported as a PDF.
 - About/summary section (used to infer behavioral profile additions)
 - Recommendations received (may enrich reference context)
 
-**Naming:** Any filename works. Only one LinkedIn export is expected; if multiple are present, `/setup` uses the most recently modified one.
+**Naming:** Any filename works. Only one LinkedIn export is expected; if multiple are present, `/job-setup` uses the most recently modified one.
 
 ---
 
@@ -72,7 +72,7 @@ Degree certificates, transcripts, and any official qualifications.
 
 **Supported formats:** `.pdf`
 
-**What `/setup` extracts:**
+**What `/job-setup` extracts:**
 - Degree titles and official names (used to verify education entries)
 - Graduation dates
 - Grades or distinctions (if visible)
@@ -88,7 +88,7 @@ Reference letters from former managers, supervisors, or collaborators.
 
 **Supported formats:** `.pdf`, `.txt`, `.md`
 
-**What `/setup` extracts:**
+**What `/job-setup` extracts:**
 - Referee name, title, and organization
 - Specific quotes and assessments (added to the references section of `01-candidate-profile.md`)
 - Competency language used by referees (adds behavioral signal to `02-behavioral-profile.md`)
@@ -101,7 +101,7 @@ Reference letters from former managers, supervisors, or collaborators.
 
 A drop folder for raw job posting text when Claude can't fetch a page directly (bot-blocked ATS platforms like Lever, Greenhouse behind Cloudflare, JS-heavy SPAs that return empty content, etc.). You open the posting yourself and paste the full text into a `.txt` file here.
 
-**Naming:** `<Company> - <Job Title>.txt`, e.g. `RYZ Labs - Front End Engineer - React.js.txt`. Content is the full posting text, pasted as-is. Including the company keeps the drop folder collision-free when two postings share a title, and gives `/apply` the company name for free.
+**Naming:** `<Company> - <Job Title>.txt`, e.g. `RYZ Labs - Front End Engineer - React.js.txt`. Content is the full posting text, pasted as-is. Including the company keeps the drop folder collision-free when two postings share a title, and gives `/job-apply` the company name for free.
 
 **Workflow:** Drop the file, then tell Claude in the conversation — it isn't watched automatically. Once a posting has been evaluated or applied to, it can be deleted from here or left as a record; it's a scratch inbox, not an archive (use `applications/<company>_<role>/job_posting.md` for that once you actually apply).
 
@@ -113,7 +113,11 @@ A drop folder for raw job posting text when Claude can't fetch a page directly (
 
 A record of past job applications. Each subfolder is one application.
 
-You can maintain these folders by hand, or let the **`/outcome`** command do it: it records progress updates and final results conversationally, archives the submitted drafts and the posting text, keeps `outcome.md` in the format below, and updates `job_search_tracker.csv` in the same step.
+For the OpenCode workflow, the canonical application archive is now
+`tracker/aplicaciones/<empresa>_<rol>/`; this legacy folder remains a valid
+manual import/archive location for `/job-setup`.
+
+You can maintain these folders by hand, or let the **`/job-outcome`** command do it: it records progress updates and final results conversationally, archives the submitted drafts and the posting text, keeps `outcome.md` in the format below, and updates `job_search_tracker.csv` in the same step.
 
 **Subfolder naming:** `<company>_<role>` — lowercase, underscores for spaces.
 
@@ -127,7 +131,7 @@ applications/
 
 ### Files within each application folder
 
-**`job_posting.md`** — Paste the full job posting text here. Used by `/setup` to infer which skills and role types you have targeted, and to calibrate `04-job-evaluation.md`.
+**`job_posting.md`** — Paste the full job posting text here. Used by `/job-setup` to infer which skills and role types you have targeted, and to calibrate `04-job-evaluation.md`.
 
 **`cover_letter.tex`** — The cover letter you actually submitted. Used to extract writing style patterns and structure for `06-cover-letter-templates.md`.
 
@@ -138,7 +142,7 @@ applications/
 ```markdown
 # Outcome: <Company> — <Role>
 
-**Status:** in_progress | hired | offer_declined | rejected | no_response | interview_only
+**Status:** applied | in_progress | interview | offer | hired | offer_declined | rejected | no_response
 
 **Date resolved:** YYYY-MM-DD
 
@@ -155,11 +159,11 @@ What would you do differently?
 Any signal about what they valued or didn't?
 ```
 
-`in_progress` marks an application that is still open (used by `/outcome` for interview-stage updates before a resolution). `/setup`'s calibration draws conclusions only from applications with a final status.
+`in_progress` marks an application that is still open (used by `/job-outcome` for interview-stage updates before a resolution). `/job-setup`'s calibration draws conclusions only from applications with a final status.
 
-Application folders may also contain **`interview_prep_<stage>.md`** files written by `/interview` (one per interview stage, kept as history). `/setup` reads only the four files named above and ignores these.
+Application folders may also contain **`interview_prep_<stage>.md`** files written by `/interview` (one per interview stage, kept as history). `/job-setup` reads only the four files named above and ignores these.
 
-**What `/setup` learns from outcome.md:**
+**What `/job-setup` learns from outcome.md:**
 - Which role types and companies have led to interviews (signals strong fit areas)
 - Which applications did not progress (informs the experience match calibration in `04-job-evaluation.md`)
 - Interview feedback, if you recorded it, can surface new STAR candidates
@@ -168,7 +172,7 @@ Application folders may also contain **`interview_prep_<stage>.md`** files writt
 
 ## File Format Notes
 
-| Format | Readable by `/setup` | Notes |
+| Format | Readable by `/job-setup` | Notes |
 |--------|--------------------------|-------|
 | `.pdf` | Yes | Parsed directly with the Read tool |
 | `.tex` | Yes | LaTeX source — structure and content both readable |
@@ -179,7 +183,7 @@ Application folders may also contain **`interview_prep_<stage>.md`** files writt
 
 ---
 
-## Re-running `/setup`
+## Re-running `/job-setup`
 
 The command is designed to be re-run as your document collection grows. Each run:
 

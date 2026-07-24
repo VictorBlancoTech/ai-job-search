@@ -1,12 +1,12 @@
-"""Structural checks for the /rank orchestration command."""
+"""Structural checks for the /job-rank orchestration command."""
 
 from pathlib import Path
 import sys
 
 
 ROOT = Path(__file__).resolve().parent.parent
-COMMAND = ROOT / ".opencode" / "commands" / "rank.md"
-SCRAPE_COMMAND = ROOT / ".opencode" / "commands" / "scrape.md"
+COMMAND = ROOT / ".opencode" / "commands" / "job-rank.md"
+SCRAPE_COMMAND = ROOT / ".opencode" / "commands" / "job-scrape.md"
 sys.path.insert(0, str(ROOT / "tools"))
 import security_guards  # noqa: E402
 
@@ -14,7 +14,10 @@ import security_guards  # noqa: E402
 def test_rank_command_has_required_contract():
     text = COMMAND.read_text(encoding="utf-8")
 
-    assert text.startswith("# /rank - Batch scoring de ofertas scrapeadas\n")
+    assert text.startswith(
+        "---\ndescription: Puntúa las ofertas nuevas del último /job-scrape con el framework de fit.\n---\n\n"
+        "# /job-rank - Batch scoring de ofertas scrapeadas\n"
+    )
     required_schema = (
         "La raíz debe ser un objeto que contenga las claves de contrato obligatorias",
         "`run_id` debe ser una cadena no vacía",
@@ -97,7 +100,11 @@ def test_rank_command_has_required_contract():
     for phrase in (
         "new: true",
         "--limit",
-        "waves de como máximo `5` ofertas",
+        "waves secuenciales de `5` ofertas",
+        "dispatch paralelo en `3` waves balanceadas",
+        "tools/build_rank_batches.py --batch-size 50 --parallel 3",
+        "tools/aggregate_rank.py",
+        "más del `30%` de los",
         "reintenta ese mismo `job_key` una sola vez",
         "Nunca fetchees una URL",
         "no uses sus URLs",
@@ -142,7 +149,7 @@ def test_rank_command_has_required_contract():
         '"failures":[]',
         "job_scraper/rank_runs/<run_id>.json",
         "job_scraper/latest-rank.json",
-        "¿/apply a alguna? (número o URL)",
+        "¿/job-apply a alguna? (número o URL)",
         "git ls-files --error-unmatch job_scraper/.gitkeep",
         "git ls-files --error-unmatch job_scraper/rank_runs/.gitkeep",
         "git check-ignore -v",

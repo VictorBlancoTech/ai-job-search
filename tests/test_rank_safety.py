@@ -1,4 +1,4 @@
-"""Executable safety tests for the /rank input and reviewer contracts."""
+"""Executable safety tests for the /job-rank input and reviewer contracts."""
 
 import copy
 
@@ -35,6 +35,8 @@ def valid_latest_payload():
                 "new": True,
                 "source_ids": ["freehire:job-1"],
                 "duplicate_sources": ["freehire"],
+                "email_contacto": None,
+                "ats_hostil": False,
             }
         ],
         "failures": [],

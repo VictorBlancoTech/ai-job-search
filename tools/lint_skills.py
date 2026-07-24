@@ -8,7 +8,8 @@ Checks:
   parses, with non-empty `name` and `description` keys
 - `allowed-tools` entries of the form `Bash(bun run <path> *)` point at files
   that exist (skill paths resolve relative to the repo root and to .agents/)
-- Every .opencode/commands/*.md starts with a `# /<name>` title
+- Every .opencode/commands/job-*.md has YAML frontmatter with a non-empty
+  `description` and its body starts with a matching `# /<name>` title
 
 Exit code 0 on success, 1 with a failure list otherwise.
 """
@@ -70,10 +71,32 @@ def check_skill(path: Path) -> None:
 
 def check_commands(commands: list[Path]) -> None:
     for cmd in commands:
-        lines = cmd.read_text(encoding="utf-8").splitlines()
+        text = cmd.read_text(encoding="utf-8")
+        if not cmd.stem.startswith("job-"):
+            errors.append(f"{rel(cmd)}: command filenames must use the 'job-' prefix")
+        if not text.startswith("---\n"):
+            errors.append(f"{rel(cmd)}: missing YAML frontmatter (commands require description)")
+            continue
+        end = text.find("\n---", 4)
+        if end == -1:
+            errors.append(f"{rel(cmd)}: unterminated YAML frontmatter")
+            continue
+        try:
+            data = yaml.safe_load(text[4:end])
+        except yaml.YAMLError as exc:
+            errors.append(f"{rel(cmd)}: frontmatter is not valid YAML: {exc}")
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"{rel(cmd)}: frontmatter did not parse to a mapping")
+            continue
+        if not data.get("description"):
+            errors.append(f"{rel(cmd)}: frontmatter missing required key 'description'")
+
+        body = text[end + 4 :].lstrip("\n")
+        lines = body.splitlines()
         first = lines[0] if lines else ""
-        if not re.match(r"^# /[a-z0-9-]+", first):
-            errors.append(f"{rel(cmd)}: must start with a '# /<name>' title")
+        if not re.match(rf"^# /{re.escape(cmd.stem)}(\s|$)", first):
+            errors.append(f"{rel(cmd)}: must start with a matching '# /{cmd.stem}' title")
 
 
 def main() -> int:

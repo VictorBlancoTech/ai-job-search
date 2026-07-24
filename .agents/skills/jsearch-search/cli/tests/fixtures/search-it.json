@@ -1,0 +1,73 @@
+{
+  "status": "OK",
+  "request_id": "3cefeb14-91e2-43ce-bf1c-5e8af2c18a1a",
+  "parameters": {
+    "query": "IT Manager in Bologna",
+    "page": 1,
+    "num_pages": 1,
+    "country": "it",
+    "language": "it"
+  },
+  "data": [
+    {
+      "job_id": "UUNXVFJPdzJSZU9najF0aUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTMHA1TldsVWJsazVTRlZpVDBscmJtaG9RM2t4YVZSUWQyVXpkbU5OVlROWFduVnVSRmxsVEdSMVJVeDVZamt0Wld0cGVIVnpSMnh0ZWtoVk1qVlJhbFZJYXpkSWFUbDJRM2czU1hjNFZrVk5NbHB2Wmt0Tk1VZDJWamxCTFVZMmVHTmtiaTE0TXpSblowbGlSMXBmVVRKdVNucHJZbXBMV0c5SVltTnFlWEY1TkdoQ01rUVNGM0pZY0dwaGNYSnZTazExZDNGMGMxQTJja00zTUVFMEdpSkJSSE55T1daU1p6RldkMDVmUTFjMVkwMTNiSEoxTFc5M05HSXlhbTF3TmpWQg",
+      "job_title": "It Manager.",
+      "employer_name": "W Executive S.R.L.",
+      "job_publisher": "Recruit.net",
+      "job_employment_type": "Full-time",
+      "job_apply_link": "https://www.recruit.net/job/it-manager--jobs/FE8200BB732FFE3C",
+      "job_apply_is_direct": false,
+      "job_description": "Per realtà industriale, operante nel mondo energy, ricerchiamo un/a IT Manager. La figura ricercata avrà un ruolo strategico e riporterà direttamente all'AD, con un forte livello di autonomia decisionale. La figura sarà responsabile della definizione e realizzazione della strategia IT, guidando i principali progetti di trasformazione digitale in un contesto in forte evoluzione. Avrà un ruolo chiave nell’analisi del landscape tecnologico e nelle decisioni strategiche relative all’ERP, occupandosi della definizione dell’architettura IT e dell’integrazione tra sistemi. Supporterà il business nei …",
+      "job_is_remote": false,
+      "job_posted_at_timestamp": 1784808000,
+      "job_posted_at_datetime_utc": "2026-07-23T12:00:00.000Z",
+      "job_city": null,
+      "job_state": null,
+      "job_country": "IT",
+      "job_min_salary": null,
+      "job_max_salary": null,
+      "job_salary_currency": null,
+      "job_salary_period": null
+    },
+    {
+      "job_id": "d044UWp0TTlRcjVMdVZHWUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTa00zWTFCWmVGQjFReTEyTFUxaFNqaDNTVTFKVTFKb1VuTk9lV1Y1VkhobVpXdEViVGM1UzNWWVptVkVVSFJ4TUhoTlMwa3pjM2RsYmpCVWVVcG1iamhWVm5kdGVtUlVRblF4YmswemJsRnhPRTk2YlVwWVJYQnVTRkIyZDFSWFVscG9ielZ5U1ROaWNFeFBZa2hWZW10U1YybGtRblpUZEdkbGJsQTBXbUZRUlRoNVpIQVNGM0pZY0dwaGNYSnZTazExZDNGMGMxQTJja00zTUVFMEdpSkJSSE55T1daUmFuWjBibmg1TVUwd1YzQklaM0ZXTVUwMVpEWkNTMFIzT1hGQg",
+      "job_title": "IT Delivery & Governance Manager",
+      "employer_name": "Antal International",
+      "job_publisher": "LinkedIn",
+      "job_employment_type": "Full-time",
+      "job_apply_link": "https://it.linkedin.com/jobs/view/it-delivery-governance-manager-at-antal-international-4442586948",
+      "job_apply_is_direct": false,
+      "job_description": "Per una primaria realtà operante nel settore assicurativo e dei servizi healthcare, siamo alla ricerca di un IT Delivery & Governance Manager che guiderà la governance delle iniziative IT strategiche, assicurando l'allineamento tra tecnologia e business e garantendo elevati standard di qualità, efficienza e continuità operativa.\n\nLa risorsa coordinerà team di lavoro interni e fornitori esterni, con la responsabilità del portfolio progettuale e dell'evoluzione delle soluzioni applicative aziendali.\n\nResponsabilità\n• Governare il portfolio dei progetti IT, assicurando la corretta prioritizzazion…",
+      "job_is_remote": false,
+      "job_posted_at_timestamp": 1784622600,
+      "job_posted_at_datetime_utc": "2026-07-21T08:30:00.000Z",
+      "job_city": null,
+      "job_state": null,
+      "job_country": null,
+      "job_min_salary": 40000,
+      "job_max_salary": 50000,
+      "job_salary_currency": "EUR",
+      "job_salary_period": "YEAR"
+    },
+    {
+      "job_id": "V0N6SU9aZ0J2aUhyOWREUUFBQUFBQT09OkVzd0JDb3dCUVVwcFZEUjBTVTVhV205dGJISmxlWHBvYWtsS2RrTnRkVTl5YmpsdWJFSlZYMHQwWTJScGRGa3hTM0ppYkZsVVgxUlZiMFpmWlcxZmFEQkJkSFpVUnpSTVltNTRNRVV4UmtrNFRqUlJjek5pWmxKYU5FRTVTMFZ2Y0dkaE1uWlBaa3BPUlZaZmFXaG9iVlZVWTNCeU4zZGtja3hTTmkxSmJYZGhjbll4U2xSdlNVUmhNamRmTlVWcFduSVNGM0pZY0dwaGNYSnZTazExZDNGMGMxQTJja00zTUVFMEdpSkJSSE55T1daU2RHVjFPR3BqTUdwS1dHdDBTRE10WnpSMk0yeDJaa2xsUjJ0Ug",
+      "job_title": "IT Manager - RIF 98212 | Bologna, IT",
+      "employer_name": "Wehunt",
+      "job_publisher": "EFinancialCareers IT",
+      "job_employment_type": "Full-time",
+      "job_apply_link": "https://www.efinancialcareers.it/jobs-Italy-Bologna-IT_Manager_-_RIF_98212.id24218785",
+      "job_apply_is_direct": false,
+      "job_description": "Descrizione azienda \r\n\r\nPer nostro cliente, affermata azienda italiana specializzata nel settore Fashion, siamo alla ricerca di un IT Manager / Sistemista Applicativo. \r\n\r\nLa figura si curerà di gestire la sicurezza dell'area applicativa e gestionale, rafforzando la governance dei sistemi esistenti e sviluppando nuovi progetti a supporto del business. \r\n\r\nPosizione \r\n\r\nSarà responsabile della gestione e dell'evoluzione dei principali sistemi applicativi aziendali, con particolare focus su ERP, strumenti a supporto della rete vendita e soluzioni per il monitoraggio delle performance aziendali. …",
+      "job_is_remote": true,
+      "job_posted_at_timestamp": 1784396700,
+      "job_posted_at_datetime_utc": "2026-07-18T17:45:00.000Z",
+      "job_city": "Bologna",
+      "job_state": "Città Metropolitana di Bologna",
+      "job_country": "IT",
+      "job_min_salary": null,
+      "job_max_salary": null,
+      "job_salary_currency": null,
+      "job_salary_period": null
+    }
+  ]
+}

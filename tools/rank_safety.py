@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure-stdlib safety rules shared by the /rank command and its tests."""
+"""Pure-stdlib safety rules shared by the /job-rank command and its tests."""
 
 import html
 import ipaddress
@@ -67,6 +67,8 @@ _RESULT_KEYS = {
     "source_ids",
     "duplicate_sources",
     "job_key",
+    "email_contacto",
+    "ats_hostil",
 }
 _RESULT_REQUIRED_KEYS = _RESULT_KEYS - {"job_key"}
 _FAILURE_KEYS = {
@@ -306,7 +308,7 @@ def _validate_failure(failure: Any, index: int) -> List[str]:
 
 
 def validate_latest_payload(payload: Any) -> List[str]:
-    """Return safe schema errors for a normalized /scrape latest payload."""
+    """Return safe schema errors for a normalized /job-scrape latest payload."""
     errors: List[str] = []
     if not isinstance(payload, dict):
         return ["root: must be an object"]
@@ -397,6 +399,10 @@ def _validate_result(result: Any, index: int) -> List[str]:
         errors.append("{}.remote: invalid boolean".format(prefix))
     if not isinstance(result.get("new"), bool):
         errors.append("{}.new: invalid boolean".format(prefix))
+    if result.get("email_contacto") is not None and not _non_empty_string(result.get("email_contacto")):
+        errors.append("{}.email_contacto: invalid nullable string".format(prefix))
+    if result.get("ats_hostil") is not None and not isinstance(result.get("ats_hostil"), bool):
+        errors.append("{}.ats_hostil: invalid boolean".format(prefix))
     if not is_safe_identifier(result.get("source_call")):
         errors.append("{}.source_call: unsafe identifier".format(prefix))
 
@@ -467,3 +473,57 @@ def sanitize_reviewer_output(
         if any(contains_contact_pattern(value) for value in values):
             raise ValueError("reviewer contact pattern remains")
     return sanitized
+
+
+_ATS_HOSTIL_DOMAINS = frozenset({
+    "workday.com",
+    "myworkdayjobs.com",
+    "myworkdaysite.com",
+    "taleo.net",
+    "successfactors.com",
+    "icims.com",
+    "phenompeople.com",
+    "smartrecruiters.com",
+    "jobvite.com",
+})
+
+_NOREPLY_LOCAL_PARTS = frozenset({
+    "noreply",
+    "no-reply",
+    "no_reply",
+    "donotreply",
+    "do-not-reply",
+    "do_not_reply",
+    "mailer-daemon",
+    "postmaster",
+})
+
+
+def detect_ats_hostil(value: Any) -> bool:
+    """Return whether the apply URL belongs to a hostile ATS (forced account or long form)."""
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        parts = urlsplit(value.lower())
+    except ValueError:
+        return False
+    host = parts.hostname or ""
+    if not host:
+        return False
+    return any(
+        host == domain or host.endswith("." + domain)
+        for domain in _ATS_HOSTIL_DOMAINS
+    )
+
+
+def extract_contact_email(description: Any) -> Optional[str]:
+    """Return the first non-noreply email in a job description, or None."""
+    if not isinstance(description, str) or not description:
+        return None
+    for match in _EMAIL_RE.finditer(description):
+        email = match.group(0)
+        local = email.split("@", 1)[0].lower()
+        if local in _NOREPLY_LOCAL_PARTS:
+            continue
+        return email
+    return None

@@ -11,8 +11,10 @@ Sistema personal de búsqueda de empleo sobre OpenCode. Fork podado y adaptado d
 ## Uso
 
 1. `.env` con credenciales (ver `AGENTS.md` y spec en `docs/`).
-2. `/setup` — importa/verifica el perfil.
-3. `/apply <url o texto>` — pipeline completo: scoring → CV → carta → review → PDF + ATS check.
+2. `/job-setup` — importa/verifica el perfil.
+3. `/job-scrape` y `/job-rank` — buscan y puntúan ofertas.
+4. `/job-apply <url o texto>` — pipeline completo: scoring → CV → carta → review → PDF + ATS check.
+5. `/job-outcome` — registra aplicaciones, resultados y seguimiento.
 
 ## Tests
 
