@@ -467,3 +467,57 @@ def sanitize_reviewer_output(
         if any(contains_contact_pattern(value) for value in values):
             raise ValueError("reviewer contact pattern remains")
     return sanitized
+
+
+_ATS_HOSTIL_DOMAINS = frozenset({
+    "workday.com",
+    "myworkdayjobs.com",
+    "myworkdaysite.com",
+    "taleo.net",
+    "successfactors.com",
+    "icims.com",
+    "phenompeople.com",
+    "smartrecruiters.com",
+    "jobvite.com",
+})
+
+_NOREPLY_LOCAL_PARTS = frozenset({
+    "noreply",
+    "no-reply",
+    "no_reply",
+    "donotreply",
+    "do-not-reply",
+    "do_not_reply",
+    "mailer-daemon",
+    "postmaster",
+})
+
+
+def detect_ats_hostil(value: Any) -> bool:
+    """Return whether the apply URL belongs to a hostile ATS (forced account or long form)."""
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        parts = urlsplit(value.lower())
+    except ValueError:
+        return False
+    host = parts.hostname or ""
+    if not host:
+        return False
+    return any(
+        host == domain or host.endswith("." + domain)
+        for domain in _ATS_HOSTIL_DOMAINS
+    )
+
+
+def extract_contact_email(description: Any) -> Optional[str]:
+    """Return the first non-noreply email in a job description, or None."""
+    if not isinstance(description, str) or not description:
+        return None
+    for match in _EMAIL_RE.finditer(description):
+        email = match.group(0)
+        local = email.split("@", 1)[0].lower()
+        if local in _NOREPLY_LOCAL_PARTS:
+            continue
+        return email
+    return None
