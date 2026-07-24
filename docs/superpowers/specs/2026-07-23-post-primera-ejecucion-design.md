@@ -74,7 +74,7 @@ Notas aplicadas:
 - Si una entrada carece de `title`, `location` o `score`, moverla a `failures` con código `RANK_FIELD_NULL` y razón descriptiva. No romper el agregado.
 
 **2.2.4 `tools/rank_safety.py`** — nuevo guardrail:
-- Si >30% de una wave falla (`RANK_FAILED` o `RANK_FIELD_NULL`), abortar agregación y devolver error. Evita shortlists con datos parciales.
+- Si >30% de una wave falla (`RANK_FAILED` o `RANK_FIELD_NULL`) **y hay ≥3 candidatos**, abortar agregación con `SystemExit(2)` y devolver error. Con menos de 3 candidatos, el threshold no aplica (evita aborts espurios en runs tiny). Evita shortlists con datos parciales.
 
 ### 2.3 Scraper — descripción completa + ATS/email
 
