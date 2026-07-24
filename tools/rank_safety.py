@@ -67,6 +67,8 @@ _RESULT_KEYS = {
     "source_ids",
     "duplicate_sources",
     "job_key",
+    "email_contacto",
+    "ats_hostil",
 }
 _RESULT_REQUIRED_KEYS = _RESULT_KEYS - {"job_key"}
 _FAILURE_KEYS = {
@@ -397,6 +399,10 @@ def _validate_result(result: Any, index: int) -> List[str]:
         errors.append("{}.remote: invalid boolean".format(prefix))
     if not isinstance(result.get("new"), bool):
         errors.append("{}.new: invalid boolean".format(prefix))
+    if result.get("email_contacto") is not None and not _non_empty_string(result.get("email_contacto")):
+        errors.append("{}.email_contacto: invalid nullable string".format(prefix))
+    if result.get("ats_hostil") is not None and not isinstance(result.get("ats_hostil"), bool):
+        errors.append("{}.ats_hostil: invalid boolean".format(prefix))
     if not is_safe_identifier(result.get("source_call")):
         errors.append("{}.source_call: unsafe identifier".format(prefix))
 

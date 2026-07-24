@@ -18,6 +18,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools.rank_safety import detect_ats_hostil, extract_contact_email  # noqa: E402
+
 REPO = Path(__file__).resolve().parents[2]
 JOB_SCRAPER = REPO / "job_scraper"
 # Use relative paths from REPO for CLI args so import.meta.dir resolves .env correctly
@@ -437,6 +440,8 @@ def normalize_row(item, portal, call_id):
         "salary": salary if isinstance(salary, str) else None,
         "source_call": call_id,
         "new": False,
+        "email_contacto": extract_contact_email(description),
+        "ats_hostil": detect_ats_hostil(url),
     }
 
 
@@ -764,6 +769,8 @@ def main():
             "salary": r.get("salary"),
             "source_call": r.get("source_call"),
             "new": r.get("new", False),
+            "email_contacto": r.get("email_contacto"),
+            "ats_hostil": r.get("ats_hostil", False),
         }
         if "duplicate_sources" in r:
             result["duplicate_sources"] = r["duplicate_sources"]

@@ -35,6 +35,8 @@ def valid_latest_payload():
                 "new": True,
                 "source_ids": ["freehire:job-1"],
                 "duplicate_sources": ["freehire"],
+                "email_contacto": None,
+                "ats_hostil": False,
             }
         ],
         "failures": [],
