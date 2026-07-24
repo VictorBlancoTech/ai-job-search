@@ -1,4 +1,4 @@
-# Queries de Búsqueda (para /scrape — Fase 2)
+# Queries de Búsqueda (para /job-scrape — Fase 2)
 
 ## Italiano (Italia presencial + remoto IT)
 1. Responsabile IT

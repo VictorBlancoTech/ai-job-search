@@ -7,7 +7,7 @@ description: >
   roles. Trigger phrases: remote jobs, remote developer jobs, AI consultant
   jobs, find a remote job, search remote vacancies, or look up remote openings.
 context: fork
-enabled: true  # set to false to keep this portal installed but have /scrape skip it
+enabled: true  # set to false to keep this portal installed but have /job-scrape skip it
 allowed-tools: Bash(bun run .agents/skills/remotive-search/cli/src/cli.ts *)
 ---
 
@@ -21,7 +21,7 @@ API key y el CLI no tiene dependencias de runtime: solo necesita `bun`.
 
 - La API es global y todos sus resultados se marcan como `remote: true`.
 - No hay filtro de pais o localizacion en este CLI. El filtrado geografico se
-  realiza en `/rank` usando `candidate_required_location`.
+  realiza en `/job-rank` usando `candidate_required_location`.
 - Es una API publica para compartir ofertas, no una fuente para scraping masivo.
   Respeta los terminos de Remotive y su uso razonable: la documentacion recomienda
   consultar los datos como maximo unas cuatro veces al dia porque cambian poco.

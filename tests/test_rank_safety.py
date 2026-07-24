@@ -1,4 +1,4 @@
-"""Executable safety tests for the /rank input and reviewer contracts."""
+"""Executable safety tests for the /job-rank input and reviewer contracts."""
 
 import copy
 

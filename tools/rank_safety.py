@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure-stdlib safety rules shared by the /rank command and its tests."""
+"""Pure-stdlib safety rules shared by the /job-rank command and its tests."""
 
 import html
 import ipaddress
@@ -306,7 +306,7 @@ def _validate_failure(failure: Any, index: int) -> List[str]:
 
 
 def validate_latest_payload(payload: Any) -> List[str]:
-    """Return safe schema errors for a normalized /scrape latest payload."""
+    """Return safe schema errors for a normalized /job-scrape latest payload."""
     errors: List[str] = []
     if not isinstance(payload, dict):
         return ["root: must be an object"]

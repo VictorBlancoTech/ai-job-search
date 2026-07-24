@@ -1,7 +1,7 @@
 # Evaluación de Ofertas — Framework de Scoring
 
 Framework canónico para evaluar el encaje de una oferta con el perfil de Victor.
-Usado por /apply (paso 1), /rank (batch) y el digest matutino.
+Usado por /job-apply (paso 1), /job-rank (batch) y el digest matutino.
 
 ## Dimensiones y pesos
 
@@ -77,5 +77,5 @@ Notas: <ángulos de sector, narrativa marina si aplica, flags de urgencia/deadli
 
 ## Calibración
 
-Tras 10-15 aplicaciones con resultado registrado (/outcome), proponer ajuste de pesos
+Tras 10-15 aplicaciones con resultado registrado (/job-outcome), proponer ajuste de pesos
 según qué perfiles de oferta consiguieron entrevistas reales.

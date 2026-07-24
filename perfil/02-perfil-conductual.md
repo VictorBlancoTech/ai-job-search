@@ -1,6 +1,6 @@
 # Perfil Conductual — Victor Blanco
 
-Sin assessment formal (PI/DISC) por ahora — /setup ofrece completarlo. Autoevaluación:
+Sin assessment formal (PI/DISC) por ahora — /job-setup ofrece completarlo. Autoevaluación:
 
 - Híbrido técnico-negocio: igual de cómodo programando una plataforma que presentando
   el ROI a un board. Evidencia: PlantPocket-KPI concebida, desarrollada y vendida por él.
@@ -13,5 +13,5 @@ Sin assessment formal (PI/DISC) por ahora — /setup ofrece completarlo. Autoeva
 
 Fortalezas: visión end-to-end (de sensor a decisión de negocio), velocidad de ejecución con
 IA (AI-assisted development), credibilidad industrial real.
-Áreas de crecimiento: [COMPLETAR en /setup].
+Áreas de crecimiento: [COMPLETAR en /job-setup].
 Entorno ideal: PMI industrial o tech con autonomía, impacto medible, y mar cerca.

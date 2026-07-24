@@ -12,7 +12,7 @@ description: >
   ofertas de empleo, ofertas de trabajo, cercare lavoro, offerte di lavoro,
   annunci di lavoro, look up this Adzuna job posting.
 context: fork
-enabled: true  # set to false to keep this portal installed but have /scrape skip it
+enabled: true  # set to false to keep this portal installed but have /job-scrape skip it
 allowed-tools: Bash(bun run .agents/skills/adzuna-search/cli/src/cli.ts *)
 ---
 
@@ -46,7 +46,7 @@ reintenta una vez con backoff de 2s y luego falla con exit 1.
 ## Cuándo usar esta skill
 
 - Buscar ofertas por palabras clave y/o localización en Italia o España.
-- Como primera fuente del pipeline `/scrape` para los mercados IT/ES.
+- Como primera fuente del pipeline `/job-scrape` para los mercados IT/ES.
 - Cuando necesites la descripción completa sin una segunda llamada (viene
   inline en los resultados de búsqueda — no hay comando `detail`).
 

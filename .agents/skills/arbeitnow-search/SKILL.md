@@ -8,7 +8,7 @@ description: >
   EU jobs, Arbeitnow openings, buscar empleo, buscar trabajo, ofertas de empleo,
   ofertas de trabajo, or buscar puestos en Alemania.
 context: fork
-enabled: true  # set to false to keep this portal installed but have /scrape skip it
+enabled: true  # set to false to keep this portal installed but have /job-scrape skip it
 allowed-tools: Bash(bun run .agents/skills/arbeitnow-search/cli/src/cli.ts *)
 ---
 
