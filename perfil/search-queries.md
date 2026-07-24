@@ -21,10 +21,39 @@
 14. AI Automation Specialist (remote, Europe)
 15. AI Solutions Consultant (remote, EMEA)
 
+## Italiano (adicional Fase 3)
+16. IT Demand Planner
+17. IT Infrastructure Manager
+18. Responsabile Sicurezza IT
+19. IT Operations Manager
+20. Head of Digital
+
+## Español (adicional Fase 3)
+21. IT Manager
+22. Responsable Sistemas
+23. Consultor estrategia tecnológica
+24. Digital Operations Manager
+
+## Inglés (adicional Fase 3)
+25. IT Strategy Consultant
+26. Technology Advisor
+27. Digital Transformation Consultant
+
 ## Ubicaciones para portales con filtro
 - "Bologna, Emilia-Romagna" (+ radio 25 km)
 - "Rimini" / "Ravenna" / "Livorno" / "Genova" (costa)
 - "Remote" / "Italia (remoto)" / "España (remoto)"
+
+## Ubicaciones costeras Tier A Italia (pasar como `location` a Adzuna/Careerjet/InfoJobs/JSearch)
+Nápoles, Palermo, Génova, Bari, Catania, Venecia, Mesina, Trieste, Tarento,
+Reggio Calabria, Rávena, Livorno, Rímini, Cagliari, Salerno, Latina, Sássari,
+Pescara, Siracusa, Ancona, Lecce, La Spezia, Pisa
+
+## Ubicaciones costeras Tier B España (pasar como `location`)
+Barcelona, Valencia, Málaga, Palma, Las Palmas, Alicante, Bilbao, Vigo,
+L'Hospitalet, Gijón, La Coruña, Elche, Badalona, Cartagena, Jerez,
+Santa Cruz Tenerife, Almería, San Sebastián, Castellón, Santander,
+Marbella, Tarragona, Huelva, Mataró
 
 ## Fuentes sector marino (marine-search, Fase 4)
 - Conservation Careers, Oceana, Marevivo, Seas At Risk, EMODnet, OGS Trieste,
