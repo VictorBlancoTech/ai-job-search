@@ -33,6 +33,7 @@ job_scraper/rank_runs/*
 !job_scraper/rank_runs/.gitkeep
 job_scraper/latest-rank.json
 cv/victor_*.tex
+cv/victor_*.txt
 cv/victor_*/**
 cv/victor-cv-master-*.tex
 cv/cv-master/**
