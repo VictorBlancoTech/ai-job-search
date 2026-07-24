@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.rank_safety import detect_ats_hostil, extract_contact_email  # noqa: E402
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[1]
 JOB_SCRAPER = REPO / "job_scraper"
 # Use relative paths from REPO for CLI args so import.meta.dir resolves .env correctly
 SKILLS = Path(".agents") / "skills"
