@@ -133,7 +133,9 @@ Notas aplicadas:
 
 - Borrar `EOF` (raíz, archivo vacío).
 - Commitear archivos pendientes: `tools/` nuevos, `tests/` nuevos, `ops/`, comandos renombrados `job-*.md`, skills modificados, AGENTS.md, spec actual.
-- Cerrar `pmi-manifatturiera`: decisión del usuario antes de implementar (aplicar o marcar DESCARTAR en tracker).
+- **PMI Manifatturiera → DESCARTAR y limpiar** (decisión Victor 2026-07-23): oferta huérfana del 22 julio, sin PDF compilado ni tracker ni rank. Acciones:
+  - Añadir fila en `tracker/job_search_tracker.csv` con `estado=discarded`, `notas="Oferta huérfana — CV/carta generados el 2026-07-22 pero nunca compilados ni aplicados. Descartada en limpieza post-primera-ejecución."`
+  - Borrar `cv/victor_pmi-manifatturiera_responsabile-it.tex`, la subcarpeta `cv/victor_pmi-manifatturiera_responsabile-it/` y `tracker/borradores/carta_pmi-manifatturiera_responsabile-it.md`.
 
 ---
 
