@@ -100,7 +100,11 @@ def test_rank_command_has_required_contract():
     for phrase in (
         "new: true",
         "--limit",
-        "waves de como máximo `5` ofertas",
+        "waves secuenciales de `5` ofertas",
+        "dispatch paralelo en `3` waves balanceadas",
+        "tools/build_rank_batches.py --batch-size 50 --parallel 3",
+        "tools/aggregate_rank.py",
+        "más del `30%` de los",
         "reintenta ese mismo `job_key` una sola vez",
         "Nunca fetchees una URL",
         "no uses sus URLs",

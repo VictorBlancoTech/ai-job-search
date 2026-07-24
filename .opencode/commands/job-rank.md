@@ -46,18 +46,18 @@ Uso válido:
 
 Reglas:
 
-- `--limit` acepta exactamente un entero decimal entre `1` y `50`, y establece
+- `--limit` acepta exactamente un entero decimal entre `1` y `150`, y establece
   el máximo de ofertas. El valor por defecto es `10`.
-- Se acepta exactamente un único entero posicional entre `1` y `50` por
+- Se acepta exactamente un único entero posicional entre `1` y `150` por
   compatibilidad. No se puede combinar con `--limit`.
 - Rechaza `--limit` repetido, un valor ausente, no entero o fuera de rango,
   varios posicionales, cualquier otro texto posicional y cualquier opción
   desconocida (`--all`, `--limit=10`, `-n`, etc.).
 - Ante un error, detente y explica el token y la forma válida:
-  `Uso: /job-rank [--limit <1..50>|<1..50>]`.
+  `Uso: /job-rank [--limit <1..150>|<1..150>]`.
 - No existe `--all` en esta versión. Por tanto, el comportamiento por defecto
   nunca vuelve a puntuar todo el histórico y no hay una ruta para saltarse el
-  límite de `50`.
+  límite de `150`.
 
 ## 2. Cargar y validar la fuente
 
@@ -247,10 +247,30 @@ restricciones no negociables:
 ## 5. Protocolo de reviewers en paralelo
 
 Para cada candidato, despacha exactamente un agente `general` con un prompt
-inline. Haz waves de como máximo `5` ofertas y espera a que termine cada wave
-antes de iniciar la siguiente. Nunca puede haber más de `5` agentes `general`
-concurrentes. No pidas a los agentes que lean archivos, lean raw, usen otras
-fuentes o fetcheen URLs.
+inline. El número de agentes concurrentes depende del volumen:
+
+- **≤25 ofertas**: waves secuenciales de `5` ofertas, esperando a que termine
+  cada wave antes de iniciar la siguiente. Máximo `5` agentes `general`
+  concurrentes.
+- **>25 ofertas**: dispatch paralelo en `3` waves balanceadas de ≤`50` ofertas
+  cada una. Lanza los `3` agentes en una única llamada al tool `task` con `3`
+  `subagent_type: general` en paralelo. Cada agente procesa su wave completa
+  internamente (scoring por lotes de `5` dentro de su propia ejecución para
+  evitar límites de contexto) y devuelve un array JSON con los resultados.
+
+Nunca puede haber más de `5` agentes `general` concurrentes en modo secuencial,
+ni más de `3` en modo paralelo. No pidas a los agentes que lean archivos, lean
+raw, usen otras fuentes o fetcheen URLs.
+
+Antes del dispatch paralelo, escribe los batches con:
+
+```bash
+python3 tools/build_rank_batches.py --batch-size 50 --parallel 3
+```
+
+Eso genera `/tmp/rank_batches.json` con `waves: [...]` ya balanceadas. Cada
+elemento de wave tiene el `block` listo para insertar inline en el prompt del
+subagente.
 
 Cada prompt debe contener inline, sin referencias a rutas que el agente tenga
 que leer:
@@ -495,6 +515,14 @@ Ordena solo los ranks válidos por:
 Conserva los fallos en el orden de los candidatos de entrada. Define los
 conteos de presentación como `candidates` = candidatos seleccionados,
 `ranked` = ranks válidos y `failures` = entradas de `failures`.
+
+## 6.1 Agregación con threshold de fallos
+
+`tools/aggregate_rank.py` aborta con exit `2` si más del `30%` de los
+candidatos fallan (`RANK_FAILED` o `RANK_FIELD_NULL`) y hay `≥3` candidatos
+totales. En ese caso NO se escribe `latest-rank.json`; el operador debe
+revisar las causas antes de reintentar. Con menos de `3` candidatos, el
+threshold no aplica (evita aborts espurios en runs pequeños).
 
 ## 7. Artefactos locales
 
