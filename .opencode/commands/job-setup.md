@@ -1,4 +1,8 @@
-# /setup - Onboarding y calibración del perfil
+---
+description: Importa, verifica y calibra el perfil del candidato y las búsquedas.
+---
+
+# /job-setup - Onboarding y calibración del perfil
 
 Configuras o actualizas el perfil de `perfil/`. Argumentos opcionales en `$ARGUMENTS`:
 `--section search` (solo reconfigurar queries) o `--section <archivo>` (solo esa sección).
@@ -7,7 +11,7 @@ Configuras o actualizas el perfil de `perfil/`. Argumentos opcionales en `$ARGUM
 
 1. **Si `perfil/01-perfil-candidato.md` ya existe y tiene contenido:** modo VERIFICACIÓN.
    Resume en 5 líneas lo que hay y ofrece: (a) completar huecos marcados
-   `[COMPLETAR en /setup]`, (b) actualizar una sección, (c) nada, salir.
+   `[COMPLETAR en /job-setup]`, (b) actualizar una sección, (c) nada, salir.
 2. **Si no existe:** modo IMPORTACIÓN. Fuentes, en orden de preferencia:
    - **A. Awesome-CV:** `/Users/victorblanco/Documents/Awesome-CV/instrucciones.md`
      (fuente principal aprobada) + masters en `cv/`.
