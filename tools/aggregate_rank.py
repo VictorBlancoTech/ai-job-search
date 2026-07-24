@@ -61,7 +61,17 @@ def main():
 
     valid = []
     failures = []
+    CRITICAL_FIELDS = ("title", "location")
     for job_key, candidate in candidates.items():
+        missing = [f for f in CRITICAL_FIELDS if not candidate.get(f)]
+        if missing:
+            failures.append({
+                "job_key": job_key,
+                "code": "RANK_FIELD_NULL",
+                "attempts": 0,
+                "reason": "candidate missing critical fields: " + ",".join(missing),
+            })
+            continue
         raw = outputs.get(job_key)
         if raw is None:
             failures.append({"job_key": job_key, "code": "RANK_FAILED", "attempts": 0, "reason": "missing_output"})
@@ -111,6 +121,15 @@ def main():
             "duplicate_sources": list(candidate.get("duplicate_sources") or []),
         }
         valid.append(rank)
+
+    total = len(candidates)
+    if total >= 3 and len(failures) / total > 0.30:
+        print(
+            f"aggregate_rank: abort — failure rate {len(failures)}/{total} "
+            f"({100*len(failures)/total:.0f}%) exceeds 30% threshold. "
+            "No rank artifact written."
+        )
+        raise SystemExit(2)
 
     valid.sort(key=sort_rank_key)
     failures.sort(key=lambda f: f["job_key"])
